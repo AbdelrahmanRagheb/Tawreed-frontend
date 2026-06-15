@@ -1,0 +1,6 @@
+{
+  "name": "Tawreed App",
+  "description": "A responsive B2B supply and procurement marketplace application.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
