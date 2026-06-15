@@ -21,10 +21,14 @@ import { SupplierDashboard } from './pages/supplier/Dashboard';
 import { SupplierProducts } from './pages/supplier/Products';
 import { SupplierOrders } from './pages/supplier/Orders';
 import { SupplierDeliveries } from './pages/supplier/Deliveries';
+import { SupplierInventory } from './pages/supplier/Inventory';
+import { SupplierReports } from './pages/supplier/SupplierReports';
+import { SupplierNotifications } from './pages/supplier/SupplierNotifications';
 import { SupplierProfile } from './pages/supplier/Profile';
 import { AdminDashboard } from './pages/admin/Dashboard';
 import { AdminUsers } from './pages/admin/Users';
 import { AdminSuppliers } from './pages/admin/Suppliers';
+import { AdminOrders } from './pages/admin/Orders';
 import { AdminCategories } from './pages/admin/Categories';
 import { AdminRegions } from './pages/admin/Regions';
 import { AdminReports } from './pages/admin/Reports';
@@ -62,8 +66,11 @@ function AppRoutes() {
         <Route path="/supplier" element={<PrivateRoute role="supplier"><SupplierLayout /></PrivateRoute>}>
           <Route index element={<SupplierDashboard />} />
           <Route path="products" element={<SupplierProducts />} />
+          <Route path="inventory" element={<SupplierInventory />} />
           <Route path="orders" element={<SupplierOrders />} />
           <Route path="deliveries" element={<SupplierDeliveries />} />
+          <Route path="notifications" element={<SupplierNotifications />} />
+          <Route path="reports" element={<SupplierReports />} />
           <Route path="profile" element={<SupplierProfile />} />
         </Route>
 
@@ -71,6 +78,7 @@ function AppRoutes() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="suppliers" element={<AdminSuppliers />} />
+          <Route path="orders" element={<AdminOrders />} />
           <Route path="categories" element={<AdminCategories />} />
           <Route path="regions" element={<AdminRegions />} />
           <Route path="reports" element={<AdminReports />} />

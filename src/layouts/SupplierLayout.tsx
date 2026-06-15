@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, Package, Truck, Users, Settings, User, LogOut, PackageSearch, Globe } from 'lucide-react';
+import { LayoutDashboard, Package, Truck, Users, Settings, User, LogOut, PackageSearch, Globe, Archive, Bell, FileText } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../i18n';
 
@@ -17,8 +17,11 @@ export function SupplierLayout() {
   const navItems = [
     { icon: LayoutDashboard, key: 'dashboard', path: '/supplier' },
     { icon: PackageSearch, key: 'products', path: '/supplier/products' },
+    { icon: Archive, key: 'inventory', path: '/supplier/inventory' },
     { icon: Package, key: 'orders', path: '/supplier/orders' },
     { icon: Truck, key: 'deliveries', path: '/supplier/deliveries' },
+    { icon: Bell, key: 'notifications', path: '/supplier/notifications' },
+    { icon: FileText, key: 'reports', path: '/supplier/reports' },
     { icon: User, key: 'profile', path: '/supplier/profile' },
   ];
 

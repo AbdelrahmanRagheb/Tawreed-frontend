@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, Users, Store, Tags, MapPin, BarChart3, Settings, LogOut, Globe } from 'lucide-react';
+import { LayoutDashboard, Users, Store, ShoppingCart, Tags, MapPin, BarChart3, Settings, LogOut, Globe } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../i18n';
 
@@ -16,8 +16,9 @@ export function AdminLayout() {
 
   const navItems = [
     { icon: LayoutDashboard, key: 'dashboard', path: '/admin' },
-    { icon: Users, key: 'users', path: '/admin/users' },
+    { icon: Users, key: 'buyers', path: '/admin/users' },
     { icon: Store, key: 'suppliers', path: '/admin/suppliers' },
+    { icon: ShoppingCart, key: 'orders', path: '/admin/orders' },
     { icon: Tags, key: 'categories', path: '/admin/categories' },
     { icon: MapPin, key: 'regions', path: '/admin/regions' },
     { icon: BarChart3, key: 'reports', path: '/admin/reports' },

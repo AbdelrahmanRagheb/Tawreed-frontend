@@ -63,10 +63,22 @@ export interface SupplierEntry {
   email: string;
   phone: string;
   category: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'suspended';
   joinedDate: string;
   rating: number;
   totalProducts: number;
+  region?: string;
+  ordersFulfilled?: number;
+  activeOrders?: number;
+  completionRate?: number;
+  acceptanceRate?: number;
+  deliverySuccessRate?: number;
+  avgFulfillmentDays?: number;
+  address?: LocalizedString;
+  businessLicense?: string;
+  submittedDocuments?: string[];
+  activityTimeline?: { action: LocalizedString; time: string }[];
+  products?: { name: LocalizedString; category: string; stock: number; unit: string }[];
 }
 
 export interface Delivery {
@@ -86,6 +98,12 @@ export interface CategoryEntry {
   productCount: number;
   supplierCount: number;
   active: boolean;
+  monthlyOrders: number;
+  growth: number;
+  revenue: number;
+  trend: 'hot' | 'growing' | 'stable' | 'declining';
+  supplierBreakdown: { large: number; medium: number; small: number };
+  topProducts: { name: string; orders: number }[];
 }
 
 export interface RegionEntry {
@@ -114,6 +132,16 @@ export interface UserEntry {
   status: 'active' | 'suspended';
   joinedDate: string;
   lastActive: string;
+  businessName?: LocalizedString;
+  phone?: string;
+  region?: string;
+  ordersCreated?: number;
+  ordersJoined?: number;
+  completedOrders?: number;
+  cancelledOrders?: number;
+  totalSavings?: number;
+  suspensionReason?: string;
+  activityHistory?: { action: LocalizedString; time: string }[];
 }
 
 export interface ReportEntry {
