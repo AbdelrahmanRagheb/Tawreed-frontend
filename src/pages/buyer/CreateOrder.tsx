@@ -1,12 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, Plus, Minus, X, ShoppingCart, Package, MapPin,
   Calendar, Clock, Users, Eye, TrendingDown, CheckCircle,
-  Save, Send, FileText, Filter, ChevronDown,
+  Save, Send, FileText, Filter, ChevronDown, AlertTriangle,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
-import { mockProducts, mockSupplierEntries } from '../../data';
+import { publicService, type PublicProduct, type PublicCategory, type PublicRegion } from '../../services/public.service';
+import { buyerService, type CreateOrderRequest } from '../../services/buyer.service';
 import type { SavedOrderDraft } from '../../types';
 
 interface CartItem {
@@ -30,23 +31,6 @@ interface SelectedProduct {
   supplier: string;
 }
 
-const regions = ['Mansoura', 'Talkha', 'Cairo', 'Alexandria', 'Riyadh', 'Jeddah', 'Dammam'];
-
-const mockUnits: Record<string, string> = {
-  'p1': 'KG', 'p2': 'KG', 'p3': 'L', 'p4': 'TIN',
-  'p5': 'BOX', 'p6': 'JAR', 'p7': 'BAG', 'p8': 'CASE',
-};
-
-const categoryMap: Record<string, { en: string; ar: string }> = {
-  Dairy: { en: 'Dairy', ar: 'ألبان' },
-  Beverages: { en: 'Beverages', ar: 'مشروبات' },
-  Oils: { en: 'Oils', ar: 'زيوت' },
-  Grains: { en: 'Grains', ar: 'حبوب' },
-  Honey: { en: 'Honey', ar: 'عسل' },
-  'Dried Fruits': { en: 'Dried Fruits', ar: 'فواكه مجففة' },
-  Organic: { en: 'Organic', ar: 'عضوي' },
-};
-
 export function CreateOrder() {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
@@ -54,6 +38,11 @@ export function CreateOrder() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [products, setProducts] = useState<PublicProduct[]>([]);
+  const [categories, setCategories] = useState<PublicCategory[]>([]);
+  const [regions, setRegions] = useState<PublicRegion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const [orderName, setOrderName] = useState('');
   const [orderDescription, setOrderDescription] = useState('');
@@ -62,22 +51,33 @@ export function CreateOrder() {
   const [deadlineTime, setDeadlineTime] = useState('');
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [notes, setNotes] = useState('');
+  const [publishing, setPublishing] = useState(false);
 
   const [modalProduct, setModalProduct] = useState<SelectedProduct | null>(null);
   const [modalQty, setModalQty] = useState(1);
 
-  const categories = useMemo(
-    () => [...new Set(mockProducts.map((p) => p.category.en))],
-    []
-  );
+  const [draftSaved, setDraftSaved] = useState(false);
 
-  const filteredProducts = useMemo(() => {
-    return mockProducts.filter((p) => {
-      const nameMatch = p.name[language].toLowerCase().includes(search.toLowerCase());
-      const catMatch = !categoryFilter || p.category.en === categoryFilter;
-      return nameMatch && catMatch;
-    });
-  }, [search, categoryFilter, language]);
+  useEffect(() => {
+    Promise.all([
+      publicService.listProducts(),
+      publicService.listCategories(),
+      publicService.listRegions(),
+    ])
+      .then(([prodRes, catRes, regRes]) => {
+        setProducts(prodRes.data);
+        setCategories(catRes.data);
+        setRegions(regRes.data);
+      })
+      .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load data'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filteredProducts = products.filter((p) => {
+    const nameMatch = p.name.toLowerCase().includes(search.toLowerCase());
+    const catMatch = !categoryFilter || p.categoryName === categoryFilter;
+    return nameMatch && catMatch;
+  });
 
   const addToCart = (productId: string, name: string, category: string, price: number, quantity: number, stock: number) => {
     if (quantity < 1) return;
@@ -92,15 +92,7 @@ export function CreateOrder() {
       }
       return [
         ...prev,
-        {
-          productId,
-          name,
-          category,
-          quantity,
-          price,
-          unit: mockUnits[productId] || 'UNIT',
-          stock,
-        },
+        { productId, name, category, quantity, price, unit: 'UNIT', stock },
       ];
     });
     setModalProduct(null);
@@ -128,38 +120,72 @@ export function CreateOrder() {
   const estimatedSavings = Math.round(totalCost * 0.15);
   const potentialSavings = Math.round(totalCost * 0.25);
 
-  const discountThreshold = (qty: number, stock: number) => Math.min(stock, Math.ceil(qty * 1.5));
-
   const isValid = orderName.trim() && region && deadlineDate && cart.length > 0;
 
-  const [draftSaved, setDraftSaved] = useState(false);
-
-  const saveAsDraft = () => {
-    const draft: SavedOrderDraft = {
-      id: crypto.randomUUID(),
-      name: orderName || 'Untitled Draft',
-      description: orderDescription,
-      region,
-      deadlineDate,
-      deadlineTime,
-      visibility,
-      notes,
-      items: cart,
-      totalCost,
-      totalQuantity,
-      savedAt: new Date().toISOString(),
-      type: 'draft',
-    };
-    const existing = JSON.parse(localStorage.getItem('tawreed_drafts') || '[]');
-    existing.push(draft);
-    localStorage.setItem('tawreed_drafts', JSON.stringify(existing));
-    setDraftSaved(true);
-    setTimeout(() => setDraftSaved(false), 3000);
+  const handlePublish = async () => {
+    if (!isValid) return;
+    setPublishing(true);
+    try {
+      const data: CreateOrderRequest = {
+        title: orderName,
+        description: orderDescription || undefined,
+        supplierId: '00000000-0000-0000-0000-000000000001',
+        regionId: region,
+        deadline: `${deadlineDate}T${deadlineTime || '23:59'}:00`,
+        items: cart.map((item) => ({
+          productId: item.productId,
+          targetQuantity: item.quantity,
+        })),
+      };
+      await buyerService.createOrder(data);
+      navigate('/buyer/orders');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to create order');
+    } finally {
+      setPublishing(false);
+    }
   };
+
+  const saveAsDraft = async () => {
+    try {
+      const data: CreateOrderRequest = {
+        title: orderName || 'Untitled Draft',
+        description: orderDescription || undefined,
+        supplierId: '00000000-0000-0000-0000-000000000001',
+        regionId: region,
+        deadline: `${deadlineDate}T${deadlineTime || '23:59'}:00`,
+        items: cart.map((item) => ({
+          productId: item.productId,
+          targetQuantity: item.quantity,
+        })),
+      };
+      await buyerService.saveDraft(data);
+      setDraftSaved(true);
+      setTimeout(() => setDraftSaved(false), 3000);
+    } catch (err: any) {
+      console.error('Failed to save draft', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{t('createGroupOrder')}</h1>
@@ -170,14 +196,13 @@ export function CreateOrder() {
             <Save className="w-3.5 h-3.5" />
             {t('saveDraft')}
           </button>
-          <button className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+          <button onClick={handlePublish} disabled={!isValid || publishing} className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <Send className="w-3.5 h-3.5" />
-            {t('publishOrder')}
+            {publishing ? t('publishing') : t('publishOrder')}
           </button>
         </div>
       </div>
 
-      {/* Order Information Card */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
         <h2 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
           <FileText className="w-4 h-4 text-indigo-600" />
@@ -209,7 +234,7 @@ export function CreateOrder() {
               >
                 <option value="">{t('selectRegion')}</option>
                 {regions.map((r) => (
-                  <option key={r} value={r}>{r}</option>
+                  <option key={r.id} value={r.id}>{language === 'ar' ? r.nameAr : r.nameEn}</option>
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -284,11 +309,8 @@ export function CreateOrder() {
         </div>
       </div>
 
-      {/* Main content: Product Catalog + Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Product Catalog - 7/12 (~58%) */}
         <div className="lg:col-span-7 space-y-4">
-          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
@@ -300,7 +322,6 @@ export function CreateOrder() {
             />
           </div>
 
-          {/* Filters */}
           <div className="flex flex-wrap items-center gap-2">
             <Filter className="w-4 h-4 text-slate-400" />
             <select
@@ -310,33 +331,24 @@ export function CreateOrder() {
             >
               <option value="">{t('allCategories')}</option>
               {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-            <select
-              value={supplierFilter}
-              onChange={(e) => setSupplierFilter(e.target.value)}
-              className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">{t('allSuppliers')}</option>
-              {mockSupplierEntries.filter((s) => s.status === 'approved').map((s) => (
-                <option key={s.id} value={s.companyName.en}>{s.companyName[language]}</option>
+                <option key={cat.id} value={language === 'ar' ? cat.nameAr : cat.nameEn}>
+                  {language === 'ar' ? cat.nameAr : cat.nameEn}
+                </option>
               ))}
             </select>
             <span className="text-xs text-slate-400">{t('availability')}: {t('inStock')}</span>
           </div>
 
-          {/* Product Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {filteredProducts.map((product) => (
               <div key={product.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
                 <div className="h-32 overflow-hidden bg-slate-100">
-                  <img src={product.imageUrl} alt={product.name[language]} className="w-full h-full object-cover" />
+                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="p-3.5">
-                  <h3 className="text-sm font-semibold text-slate-900 truncate">{product.name[language]}</h3>
+                  <h3 className="text-sm font-semibold text-slate-900 truncate">{product.name}</h3>
                   <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
-                    <span>{t('category')}: {product.category[language]}</span>
+                    <span>{t('category')}: {product.categoryName}</span>
                   </div>
                   <div className="flex items-center justify-between mt-2">
                     <div>
@@ -351,18 +363,15 @@ export function CreateOrder() {
                   </div>
                   <button
                     onClick={() => {
-                      const supplier = mockSupplierEntries.find((s) =>
-                        s.category === product.category.en && s.status === 'approved'
-                      );
                       setModalProduct({
                         productId: product.id,
-                        name: product.name[language],
-                        category: product.category[language],
+                        name: product.name,
+                        category: product.categoryName,
                         price: product.price,
-                        unit: mockUnits[product.id] || 'UNIT',
+                        unit: product.unit || 'UNIT',
                         stock: product.stock,
                         imageUrl: product.imageUrl,
-                        supplier: supplier?.companyName[language] || '',
+                        supplier: product.categoryName,
                       });
                       setModalQty(1);
                     }}
@@ -383,10 +392,8 @@ export function CreateOrder() {
           )}
         </div>
 
-        {/* Group Order Summary - 5/12 (~42%) */}
         <div className="lg:col-span-5">
           <div className="space-y-4 sticky top-8">
-            {/* Summary Header */}
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -444,7 +451,6 @@ export function CreateOrder() {
               )}
             </div>
 
-            {/* Order Statistics */}
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('orderStatistics')}</h3>
               <div className="grid grid-cols-3 gap-4">
@@ -463,7 +469,6 @@ export function CreateOrder() {
               </div>
             </div>
 
-            {/* Savings Card */}
             {cart.length > 0 && (
               <div className="bg-gradient-to-r from-emerald-50 to-emerald-50/30 rounded-xl border border-emerald-200 p-5">
                 <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
@@ -483,38 +488,6 @@ export function CreateOrder() {
               </div>
             )}
 
-            {/* Discount Progress */}
-            {cart.length > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('discountProgress')}</h3>
-                <div className="space-y-3">
-                  {cart.slice(0, 4).map((item) => {
-                    const threshold = discountThreshold(item.quantity, item.stock);
-                    const pct = Math.min(100, Math.round((item.quantity / threshold) * 100));
-                    const color = pct >= 100 ? 'bg-emerald-500' : pct >= 50 ? 'bg-indigo-500' : 'bg-amber-500';
-                    return (
-                      <div key={item.productId}>
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-xs font-medium text-slate-700">{item.name}</p>
-                          <p className="text-[11px] text-slate-500">{item.quantity} {item.unit}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
-                          </div>
-                          <span className="text-[10px] font-semibold text-slate-600">{pct}%</span>
-                        </div>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
-                          {t('nextDiscount')}: {threshold} {item.unit}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Notes */}
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('additionalNotes')}</h3>
               <textarea
@@ -526,7 +499,6 @@ export function CreateOrder() {
               />
             </div>
 
-            {/* Review Checklist */}
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('reviewChecklist')}</h3>
               <div className="space-y-2">
@@ -545,14 +517,14 @@ export function CreateOrder() {
               </div>
             </div>
 
-            {/* Publish Actions */}
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <button
-                disabled={!isValid}
+                onClick={handlePublish}
+                disabled={!isValid || publishing}
                 className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="w-4 h-4" />
-                {t('publishGroupOrder')}
+                {publishing ? t('publishing') : t('publishGroupOrder')}
               </button>
               <div className="flex gap-2 mt-2">
                 <button onClick={saveAsDraft} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
@@ -569,7 +541,6 @@ export function CreateOrder() {
         </div>
       </div>
 
-      {/* Draft saved toast */}
       {draftSaved && (
         <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-semibold flex items-center gap-2 animate-pulse">
           <CheckCircle className="w-4 h-4" />
@@ -577,7 +548,6 @@ export function CreateOrder() {
         </div>
       )}
 
-      {/* Add Product Modal */}
       {modalProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setModalProduct(null)}>
           <div

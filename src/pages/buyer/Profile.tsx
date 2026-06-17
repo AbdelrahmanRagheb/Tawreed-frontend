@@ -1,20 +1,46 @@
-import { User, Mail, Phone, Building, MapPin, Calendar, Shield } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { User, Mail, Phone, Building, MapPin, Calendar, Shield, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n';
-import { mockUserProfiles } from '../../data';
+import { authService } from '../../services/auth.service';
 
 export function BuyerProfile() {
   const { user } = useAuth();
   const { language, t } = useLanguage();
-  const profile = mockUserProfiles.buyer;
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    authService.getMe()
+      .then((res) => setProfile(res.data))
+      .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load profile'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
+  }
 
   const details = [
-    { icon: Mail, label: 'Email', value: profile.email },
-    { icon: Phone, label: t('phone'), value: profile.phone },
-    { icon: Building, label: 'Company', value: profile.company[language] },
-    { icon: Shield, label: t('role'), value: profile.role[language] },
-    { icon: MapPin, label: 'Address', value: profile.address[language] },
-    { icon: Calendar, label: t('memberSince'), value: profile.joinedDate },
+    { icon: Mail, label: 'Email', value: profile?.email || user?.email },
+    { icon: Phone, label: t('phone'), value: profile?.phone || '-' },
+    { icon: Shield, label: t('role'), value: profile?.role || user?.role || '-' },
+    { icon: MapPin, label: 'Address', value: '-' },
+    { icon: Calendar, label: t('memberSince'), value: '-' },
   ];
 
   return (
@@ -28,7 +54,7 @@ export function BuyerProfile() {
               <User className="w-8 h-8 text-white" />
             </div>
             <div className="text-white">
-              <h2 className="text-xl font-bold">{profile.name}</h2>
+              <h2 className="text-xl font-bold">{profile?.name || user?.name}</h2>
               <p className="text-sm text-indigo-200">{user?.email}</p>
             </div>
           </div>

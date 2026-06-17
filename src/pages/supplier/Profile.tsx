@@ -1,19 +1,46 @@
-import { User, Mail, Phone, Building, MapPin, Calendar, Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { User, Mail, Phone, Building, MapPin, Calendar, Star, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n';
-import { mockUserProfiles } from '../../data';
+import { supplierService, type SupplierProfile } from '../../services/supplier.service';
 
 export function SupplierProfile() {
   const { user } = useAuth();
   const { language, t } = useLanguage();
-  const profile = mockUserProfiles.supplier;
+  const [profile, setProfile] = useState<SupplierProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    supplierService.getProfile()
+      .then((res) => setProfile(res.data))
+      .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load profile'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
+  }
 
   const details = [
-    { icon: Mail, label: 'Email', value: profile.email },
-    { icon: Phone, label: t('phone'), value: profile.phone },
-    { icon: Building, label: 'Company', value: profile.company[language] },
-    { icon: MapPin, label: 'Address', value: profile.address[language] },
-    { icon: Calendar, label: t('memberSince'), value: profile.joinedDate },
+    { icon: Mail, label: 'Email', value: profile?.email || user?.email || '-' },
+    { icon: Phone, label: t('phone'), value: profile?.phone || '-' },
+    { icon: Building, label: t('company'), value: profile?.companyName || '-' },
+    { icon: MapPin, label: 'Address', value: profile?.address || '-' },
+    { icon: Calendar, label: t('memberSince'), value: profile?.joinedDate ? new Date(profile.joinedDate).toLocaleDateString() : '-' },
   ];
 
   return (
@@ -27,12 +54,14 @@ export function SupplierProfile() {
               <User className="w-8 h-8 text-white" />
             </div>
             <div className="text-white">
-              <h2 className="text-xl font-bold">{profile.name}</h2>
+              <h2 className="text-xl font-bold">{profile?.name || user?.name}</h2>
               <p className="text-sm text-slate-300">{user?.email}</p>
-              <div className="flex items-center gap-1 mt-1">
-                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                <span className="text-sm font-medium text-amber-400">4.8</span>
-              </div>
+              {profile?.ratingAvg && (
+                <div className="flex items-center gap-1 mt-1">
+                  <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  <span className="text-sm font-medium text-amber-400">{profile.ratingAvg.toFixed(1)}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

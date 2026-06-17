@@ -10,6 +10,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 
 import { Splash } from './pages/auth/Splash';
 import { Login } from './pages/auth/Login';
+import { Register } from './pages/auth/Register';
 import { BuyerDashboard } from './pages/buyer/Dashboard';
 import { Orders } from './pages/buyer/Orders';
 import { OrderDetail } from './pages/buyer/OrderDetail';
@@ -35,22 +36,32 @@ import { AdminReports } from './pages/admin/Reports';
 import { AdminSettings } from './pages/admin/Settings';
 
 function PrivateRoute({ role, children }: { role: string, children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" /></div>;
   if (!user) return <Navigate to="/auth/login" />;
   if (user.role !== role) return <Navigate to={`/${user.role}`} />;
   return <>{children}</>;
 }
 
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="flex items-center justify-center min-h-screen"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" /></div>;
+  if (user) return <Navigate to={`/${user.role}`} />;
+  return <>{children}</>;
+}
+
 function AppRoutes() {
+  const { user } = useAuth();
   const { language } = useLanguage();
   return (
     <div className={language === 'ar' ? 'font-sans' : 'font-sans'} dir={language === 'ar' ? 'rtl' : 'ltr'}>
       <Routes>
-        <Route path="/" element={<Navigate to="/auth/splash" />} />
-        
+        <Route path="/" element={user ? <Navigate to={`/${user.role}`} /> : <Navigate to="/auth/splash" />} />
+
         <Route path="/auth" element={<AuthLayout />}>
-          <Route path="splash" element={<Splash />} />
-          <Route path="login" element={<Login />} />
+          <Route path="splash" element={<PublicRoute><Splash /></PublicRoute>} />
+          <Route path="login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="register" element={<PublicRoute><Register /></PublicRoute>} />
         </Route>
 
         <Route path="/buyer" element={<PrivateRoute role="buyer"><BuyerLayout /></PrivateRoute>}>

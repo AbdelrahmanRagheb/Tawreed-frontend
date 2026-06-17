@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import { authService } from '../services/auth.service';
 
 export type Role = 'guest' | 'buyer' | 'supplier' | 'admin';
 
@@ -7,34 +8,61 @@ interface User {
   name: string;
   email: string;
   role: Role;
+  avatar?: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
   role: Role;
-  login: (role: Role) => void;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (role: Role) => {
-    if (role === 'guest') {
-        setUser(null);
-    } else {
-        setUser({ id: '1', name: `Demo ${role}`, email: `${role}@example.com`, role });
+  useEffect(() => {
+    const stored = localStorage.getItem('user');
+    if (stored) {
+      try {
+        setUser(JSON.parse(stored));
+      } catch {
+        localStorage.removeItem('user');
+      }
     }
-  };
+    setLoading(false);
+  }, []);
 
-  const logout = () => {
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await authService.login({ email, password });
+    const { token, refreshToken, user: apiUser } = res.data;
+    localStorage.setItem('token', token);
+    localStorage.setItem('refreshToken', refreshToken);
+    const mappedUser: User = {
+      id: apiUser.id,
+      name: apiUser.name,
+      email: apiUser.email,
+      role: apiUser.role.toLowerCase() as Role,
+      avatar: apiUser.avatar,
+    };
+    localStorage.setItem('user', JSON.stringify(mappedUser));
+    setUser(mappedUser);
+  }, []);
+
+  const logout = useCallback(() => {
+    authService.logout().catch(() => {});
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     setUser(null);
-  };
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, role: user?.role || 'guest', login, logout }}>
+    <AuthContext.Provider value={{ user, role: user?.role || 'guest', login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

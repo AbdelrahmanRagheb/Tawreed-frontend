@@ -1,25 +1,46 @@
+import { useEffect, useState } from 'react';
 import { Search, TrendingUp, MapPin, Users, Calendar, Bell, DollarSign, Percent, ArrowRight, Clock, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../i18n';
-import { mockOrders, mockNotifications, mockProducts, totalSavings, mockNearbyOrders } from '../../data';
-
-const statusColors: Record<string, string> = {
-  pending: 'bg-amber-500',
-  confirmed: 'bg-blue-500',
-  shipped: 'bg-indigo-500',
-  delivered: 'bg-emerald-500',
-  cancelled: 'bg-red-500',
-};
+import { useAuth } from '../../contexts/AuthContext';
+import { buyerService, type BuyerDashboardResponse } from '../../services/buyer.service';
 
 export function BuyerDashboard() {
   const { language, t } = useLanguage();
+  const { user } = useAuth();
+  const [data, setData] = useState<BuyerDashboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const activeOrders = mockOrders.filter((o) => o.status !== 'delivered' && o.status !== 'cancelled');
-  const unreadNotifications = mockNotifications.filter((n) => !n.read).slice(0, 3);
-  const trendingProducts = [...mockProducts].sort(() => Math.random() - 0.5).slice(0, 4);
+  useEffect(() => {
+    buyerService.getDashboard()
+      .then((res) => setData(res.data))
+      .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load dashboard'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const { activeOrders, nearbyOrders, notifications, trendingProducts, totalSavings, unreadNotificationCount } = data;
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
-      {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <input
@@ -29,12 +50,11 @@ export function BuyerDashboard() {
         />
       </div>
 
-      {/* Savings Banner */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 rounded-2xl p-5 md:p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-emerald-100 text-xs font-semibold uppercase tracking-wider">{t('totalSavings')}</p>
-            <p className="text-3xl md:text-4xl font-black mt-1">SAR {totalSavings.toLocaleString()}</p>
+            <p className="text-3xl md:text-4xl font-black mt-1">EGP {totalSavings.toLocaleString()}</p>
             <p className="text-emerald-200 text-xs mt-1.5 flex items-center gap-1">
               <Percent className="w-3.5 h-3.5" />
               {t('saveUpTo')} 20% {language === 'en' ? 'on bulk orders' : 'على الطلبات بالجملة'}
@@ -46,9 +66,7 @@ export function BuyerDashboard() {
         </div>
       </div>
 
-      {/* Two columns: Orders Near You + My Active Orders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Orders Near You */}
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -58,38 +76,34 @@ export function BuyerDashboard() {
             <button className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">{t('viewAll')} →</button>
           </div>
           <div className="divide-y divide-slate-100">
-            {mockNearbyOrders.map((order) => (
-              <div key={order.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{order.product[language]}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{t('host')}: {order.host[language]}</p>
-                    <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" /> {order.distance}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3" /> {order.currentParticipants}/{order.maxParticipants}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" /> {order.deadline}
-                      </span>
+            {nearbyOrders.length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-slate-500">{t('noNearbyOrders')}</div>
+            ) : (
+              nearbyOrders.map((order) => (
+                <div key={order.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-slate-900 truncate">{order.productName}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{t('host')}: {order.creatorName}</p>
+                      <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {order.region}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3 h-3" /> {order.currentParticipants}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" /> {new Date(order.deadline).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-emerald-600">SAR {order.unitPrice.toFixed(2)}</p>
-                    <p className="text-[10px] text-emerald-500 font-semibold">-{order.savings}%</p>
-                    <button className="mt-1.5 px-3 py-1 bg-indigo-600 text-white rounded-lg text-[10px] font-bold hover:bg-indigo-700 transition-colors">
-                      {t('join')}
-                    </button>
-                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
-        {/* My Active Orders */}
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -106,29 +120,28 @@ export function BuyerDashboard() {
                 <div key={order.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-slate-900">{order.orderNumber}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{order.items.length} {t('items')}</p>
+                      <p className="text-sm font-semibold text-slate-900">{order.title}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{order.productCount} {t('items')}</p>
                       <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-500">
-                        {order.estimatedDelivery && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" /> {order.estimatedDelivery}
-                          </span>
-                        )}
                         <span className="flex items-center gap-1">
-                          <DollarSign className="w-3 h-3" /> SAR {order.totalAmount.toLocaleString()}
+                          <Calendar className="w-3 h-3" /> {new Date(order.deadline).toLocaleDateString()}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="w-3 h-3" /> EGP {order.totalValue.toLocaleString()}
                         </span>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold text-white ${statusColors[order.status]}`}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold text-white ${
+                        order.status === 'Open' ? 'bg-emerald-500' :
+                        order.status === 'PendingApproval' ? 'bg-amber-500' :
+                        order.status === 'Locked' ? 'bg-blue-500' :
+                        order.status === 'Completed' ? 'bg-emerald-500' :
+                        order.status === 'Cancelled' ? 'bg-red-500' : 'bg-slate-500'
+                      }`}>
+                        {order.status}
                       </span>
                     </div>
-                  </div>
-                  <div className="mt-2.5 w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${statusColors[order.status]}`} style={{
-                      width: order.status === 'pending' ? '15%' : order.status === 'confirmed' ? '35%' : order.status === 'shipped' ? '60%' : '0%'
-                    }} />
                   </div>
                 </div>
               ))}
@@ -140,42 +153,40 @@ export function BuyerDashboard() {
         </div>
       </div>
 
-      {/* Notifications */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="w-4 h-4 text-amber-600" />
             <h2 className="text-sm font-bold text-slate-900">{t('notifications')}</h2>
-            {unreadNotifications.length > 0 && (
-              <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">{unreadNotifications.length}</span>
+            {unreadNotificationCount > 0 && (
+              <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">{unreadNotificationCount}</span>
             )}
           </div>
           <button className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">{t('viewAll')} →</button>
         </div>
-        {unreadNotifications.length === 0 ? (
+        {notifications.length === 0 ? (
           <div className="px-5 py-8 text-center text-sm text-slate-500">
             <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
             {t('noNotifications')}
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {unreadNotifications.map((n) => (
+            {notifications.map((n) => (
               <div key={n.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors flex items-start gap-3">
                 <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
                   <Bell className="w-4 h-4 text-amber-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-slate-900">{n.title[language]}</p>
-                  <p className="text-xs text-slate-600 mt-0.5 line-clamp-1">{n.message[language]}</p>
+                  <p className="text-sm font-semibold text-slate-900">{language === 'ar' ? n.titleAr : n.titleEn}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{new Date(n.createdAt).toLocaleDateString()}</p>
                 </div>
-                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 mt-2" />
+                {!n.isRead && <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 mt-2" />}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Trending Products */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -187,14 +198,20 @@ export function BuyerDashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {trendingProducts.map((product) => (
             <div key={product.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md transition-all group">
-              <div className="aspect-square overflow-hidden">
-                <img src={product.imageUrl} alt={product.name[language]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="aspect-square overflow-hidden bg-slate-100">
+                {product.imageUrl ? (
+                  <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-300">
+                    <TrendingUp className="w-8 h-8" />
+                  </div>
+                )}
               </div>
               <div className="p-3">
-                <p className="text-xs font-semibold text-slate-900 truncate">{product.name[language]}</p>
+                <p className="text-xs font-semibold text-slate-900 truncate">{product.name}</p>
                 <div className="flex items-center justify-between mt-1.5">
-                  <p className="text-sm font-bold text-indigo-600">SAR {product.price.toFixed(2)}</p>
-                  <p className="text-[10px] text-slate-500">{product.stock} {t('inStock')}</p>
+                  <p className="text-sm font-bold text-indigo-600">EGP {product.price.toFixed(2)}</p>
+                  <p className="text-[10px] text-slate-500">{product.categoryName}</p>
                 </div>
               </div>
             </div>
