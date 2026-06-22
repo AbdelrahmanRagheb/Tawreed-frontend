@@ -1,11 +1,12 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, Users, Store, ShoppingCart, Tags, MapPin, BarChart3, Settings, LogOut, Globe } from 'lucide-react';
+import { LayoutDashboard, Users, Store, ShoppingCart, Tags, MapPin, BarChart3, Settings, LogOut, Globe, User } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../i18n';
+import { syncPreferredLang } from '../services/auth.service';
 
 export function AdminLayout() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
 
@@ -16,12 +17,13 @@ export function AdminLayout() {
 
   const navItems = [
     { icon: LayoutDashboard, key: 'dashboard', path: '/admin' },
-    { icon: Users, key: 'buyers', path: '/admin/users' },
+    { icon: Users, key: 'buyers', path: '/admin/buyers' },
     { icon: Store, key: 'suppliers', path: '/admin/suppliers' },
     { icon: ShoppingCart, key: 'orders', path: '/admin/orders' },
     { icon: Tags, key: 'categories', path: '/admin/categories' },
     { icon: MapPin, key: 'regions', path: '/admin/regions' },
     { icon: BarChart3, key: 'reports', path: '/admin/reports' },
+    { icon: User, key: 'profile', path: '/admin/profile' },
     { icon: Settings, key: 'settings', path: '/admin/settings' },
   ];
 
@@ -54,7 +56,11 @@ export function AdminLayout() {
         </nav>
         <div className="p-4 border-t border-slate-200 space-y-1">
           <button
-            onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+            onClick={() => {
+              const newLang = language === 'en' ? 'ar' : 'en';
+              setLanguage(newLang);
+              syncPreferredLang(user?.role, newLang);
+            }}
             className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
           >
             <Globe className="w-5 h-5" />
@@ -75,14 +81,26 @@ export function AdminLayout() {
                </div>
                <span className="text-lg font-bold tracking-tight text-slate-800 uppercase">{t('appTitle')}</span>
             </div>
-            <button
-              onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-              className="text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1 font-medium"
-            >
-              <Globe className="w-5 h-5" />
-              <span className="text-sm uppercase font-bold">{language === 'en' ? 'AR' : 'EN'}</span>
-            </button>
-         </header>
+             <div className="flex items-center gap-2">
+                <NavLink
+                  to="/admin/profile"
+                  className="text-slate-500 hover:text-indigo-600 transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                </NavLink>
+                <button
+                  onClick={() => {
+                    const newLang = language === 'en' ? 'ar' : 'en';
+                    setLanguage(newLang);
+                    syncPreferredLang(user?.role, newLang);
+                  }}
+                  className="text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1 font-medium"
+                >
+                  <Globe className="w-5 h-5" />
+                  <span className="text-sm uppercase font-bold">{language === 'en' ? 'AR' : 'EN'}</span>
+                </button>
+             </div>
+          </header>
          <div className="h-full">
             <Outlet />
          </div>

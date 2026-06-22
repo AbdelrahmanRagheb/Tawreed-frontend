@@ -6,7 +6,7 @@ import {
   Save, Send, FileText, Filter, ChevronDown, AlertTriangle,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
-import { publicService, type PublicProduct, type PublicCategory, type PublicRegion } from '../../services/public.service';
+import { publicService, type PublicProduct, type PublicCategory } from '../../services/public.service';
 import { buyerService, type CreateOrderRequest } from '../../services/buyer.service';
 import type { SavedOrderDraft } from '../../types';
 
@@ -27,7 +27,7 @@ interface SelectedProduct {
   price: number;
   unit: string;
   stock: number;
-  imageUrl: string;
+  image: string;
   supplier: string;
 }
 
@@ -40,13 +40,13 @@ export function CreateOrder() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<PublicProduct[]>([]);
   const [categories, setCategories] = useState<PublicCategory[]>([]);
-  const [regions, setRegions] = useState<PublicRegion[]>([]);
+  const [buyerRegionName, setBuyerRegionName] = useState('');
+  const [buyerRegionId, setBuyerRegionId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [orderName, setOrderName] = useState('');
   const [orderDescription, setOrderDescription] = useState('');
-  const [region, setRegion] = useState('');
   const [deadlineDate, setDeadlineDate] = useState('');
   const [deadlineTime, setDeadlineTime] = useState('');
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
@@ -62,12 +62,13 @@ export function CreateOrder() {
     Promise.all([
       publicService.listProducts(),
       publicService.listCategories(),
-      publicService.listRegions(),
+      buyerService.getProfile(),
     ])
-      .then(([prodRes, catRes, regRes]) => {
+      .then(([prodRes, catRes, profileRes]) => {
         setProducts(prodRes.data);
         setCategories(catRes.data);
-        setRegions(regRes.data);
+        setBuyerRegionName(profileRes.data.regionName);
+        setBuyerRegionId(profileRes.data.regionId);
       })
       .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load data'))
       .finally(() => setLoading(false));
@@ -120,7 +121,7 @@ export function CreateOrder() {
   const estimatedSavings = Math.round(totalCost * 0.15);
   const potentialSavings = Math.round(totalCost * 0.25);
 
-  const isValid = orderName.trim() && region && deadlineDate && cart.length > 0;
+  const isValid = orderName.trim() && deadlineDate && cart.length > 0;
 
   const handlePublish = async () => {
     if (!isValid) return;
@@ -129,8 +130,6 @@ export function CreateOrder() {
       const data: CreateOrderRequest = {
         title: orderName,
         description: orderDescription || undefined,
-        supplierId: '00000000-0000-0000-0000-000000000001',
-        regionId: region,
         deadline: `${deadlineDate}T${deadlineTime || '23:59'}:00`,
         items: cart.map((item) => ({
           productId: item.productId,
@@ -151,8 +150,6 @@ export function CreateOrder() {
       const data: CreateOrderRequest = {
         title: orderName || 'Untitled Draft',
         description: orderDescription || undefined,
-        supplierId: '00000000-0000-0000-0000-000000000001',
-        regionId: region,
         deadline: `${deadlineDate}T${deadlineTime || '23:59'}:00`,
         items: cart.map((item) => ({
           productId: item.productId,
@@ -223,21 +220,11 @@ export function CreateOrder() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              {t('deliveryRegion')} <span className="text-red-500">*</span>
+              {t('deliveryRegion')}
             </label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <select
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                className="w-full pl-10 pr-8 py-2 border border-slate-200 rounded-lg text-sm appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">{t('selectRegion')}</option>
-                {regions.map((r) => (
-                  <option key={r.id} value={r.id}>{language === 'ar' ? r.nameAr : r.nameEn}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <div className="flex items-center gap-2 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-500">
+              <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+              {buyerRegionName ? (language === 'ar' ? buyerRegionName : buyerRegionName) : t('loading')}
             </div>
           </div>
           <div className="md:col-span-2">
@@ -370,7 +357,7 @@ export function CreateOrder() {
                         price: product.price,
                         unit: product.unit || 'UNIT',
                         stock: product.stock,
-                        imageUrl: product.imageUrl,
+                        image: product.imageUrl,
                         supplier: product.categoryName,
                       });
                       setModalQty(1);
@@ -555,7 +542,7 @@ export function CreateOrder() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="h-40 overflow-hidden bg-slate-100">
-              <img src={modalProduct.imageUrl} alt={modalProduct.name} className="w-full h-full object-cover" />
+              <img src={modalProduct.image} alt={modalProduct.name} className="w-full h-full object-cover" />
             </div>
             <div className="p-5">
               <h3 className="text-lg font-bold text-slate-900">{modalProduct.name}</h3>

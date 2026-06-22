@@ -1,16 +1,28 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Store, CheckCircle, XCircle, Clock, Eye, Ban, X, Briefcase, MapPin, Package, ShoppingCart, TrendingUp, Activity, FileText } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import {
+  Search, Store, CheckCircle, XCircle, Clock, Eye, Ban, X, Briefcase, MapPin,
+  Package, ShoppingCart, TrendingUp, Activity, FileText, Mail, Phone, Calendar,
+  Shield, Star, ChevronDown, ChevronUp, Loader2, AlertTriangle, User
+} from 'lucide-react';
 import { useLanguage } from '../../i18n';
 import { adminService, type AdminSupplier, type AdminSupplierDetail } from '../../services/admin.service';
 
 export function AdminSuppliers() {
   const { language, t } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'all');
   const [suppliers, setSuppliers] = useState<AdminSupplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState<AdminSupplierDetail | null>(null);
+  const [expandedProduct, setExpandedProduct] = useState<number | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<{
+    id: string; name: string; action: 'approve' | 'reject' | 'suspend' | 'reactivate'
+  } | null>(null);
+  const [confirmReason, setConfirmReason] = useState('');
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const loadSuppliers = async () => {
     setLoading(true);
@@ -28,6 +40,7 @@ export function AdminSuppliers() {
 
   useEffect(() => {
     loadSuppliers();
+    setSearchParams(statusFilter === 'all' ? {} : { status: statusFilter }, { replace: true });
   }, [statusFilter]);
 
   const filtered = suppliers.filter((s) => {
@@ -43,12 +56,15 @@ export function AdminSuppliers() {
     return ['all', ...Array.from(r)];
   }, [suppliers]);
 
-  const updateStatus = async (id: string, action: 'approve' | 'reject' | 'suspend' | 'reactivate') => {
+  const executeAction = async (id: string, action: 'approve' | 'reject' | 'suspend' | 'reactivate') => {
+    setConfirmLoading(true);
     try {
       if (action === 'approve') await adminService.approveSupplier(id);
-      else if (action === 'reject') await adminService.rejectSupplier(id, 'Rejected by admin');
-      else if (action === 'suspend') await adminService.suspendSupplier(id, 'Suspended by admin');
+      else if (action === 'reject') await adminService.rejectSupplier(id, confirmReason || 'Rejected by admin');
+      else if (action === 'suspend') await adminService.suspendSupplier(id, confirmReason || 'Suspended by admin');
       else await adminService.reactivateSupplier(id);
+      setConfirmTarget(null);
+      setConfirmReason('');
       await loadSuppliers();
       if (selectedSupplier?.id === id) {
         const detail = await adminService.getSupplierDetail(id);
@@ -56,6 +72,8 @@ export function AdminSuppliers() {
       }
     } catch (err: any) {
       console.error('Failed to update supplier', err);
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -68,9 +86,52 @@ export function AdminSuppliers() {
     }
   };
 
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+  };
+
+  const formatCurrency = (val: number) => {
+    return val.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+  };
+
+  const displayStatus = (status: string) => {
+    const map: Record<string, string> = {
+      PendingApproval: 'Pending',
+      Active: 'Approved',
+      Suspended: 'Suspended',
+      Rejected: 'Rejected',
+    };
+    return map[status] || status;
+  };
+
+  const statusBadge = (status: string) => {
+    const colors: Record<string, string> = {
+      Active: 'bg-emerald-100 text-emerald-700',
+      PendingApproval: 'bg-amber-100 text-amber-700',
+      Suspended: 'bg-red-100 text-red-700',
+      Rejected: 'bg-slate-100 text-slate-600',
+    };
+    const icons: Record<string, any> = {
+      Active: CheckCircle, PendingApproval: Clock, Suspended: Ban, Rejected: XCircle,
+    };
+    const Icon = icons[status];
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${colors[status] || 'bg-slate-100 text-slate-600'}`}>
+        {Icon && <Icon className="w-3 h-3" />}
+        {displayStatus(status)}
+      </span>
+    );
+  };
+
   const totalCount = suppliers.length;
-  const pendingCount = suppliers.filter((s) => s.status === 'Pending').length;
-  const approvedCount = suppliers.filter((s) => s.status === 'Approved').length;
+  const pendingCount = suppliers.filter((s) => s.status === 'PendingApproval').length;
+  const approvedCount = suppliers.filter((s) => s.status === 'Active').length;
   const suspendedCount = suppliers.filter((s) => s.status === 'Suspended').length;
 
   if (loading && suppliers.length === 0) {
@@ -84,6 +145,7 @@ export function AdminSuppliers() {
   if (error) {
     return (
       <div className="p-8 text-center">
+        <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
         <p className="text-sm text-red-600">{error}</p>
       </div>
     );
@@ -146,8 +208,8 @@ export function AdminSuppliers() {
           className="px-3 py-2.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="all">{t('allStatus')}</option>
-          <option value="Pending">{t('pending')}</option>
-          <option value="Approved">{t('approved')}</option>
+          <option value="PendingApproval">{t('pending')}</option>
+          <option value="Active">{t('approved')}</option>
           <option value="Suspended">{t('suspended')}</option>
           <option value="Rejected">{t('rejected')}</option>
         </select>
@@ -171,11 +233,11 @@ export function AdminSuppliers() {
                 <tr key={supplier.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => openDetail(supplier)}>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                        supplier.status === 'Approved' ? 'bg-emerald-100' : supplier.status === 'Pending' ? 'bg-amber-100' : 'bg-red-100'
+                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                        supplier.status === 'Active' ? 'bg-emerald-100' : supplier.status === 'PendingApproval' ? 'bg-amber-100' : 'bg-red-100'
                       }`}>
                         <Store className={`w-4 h-4 ${
-                          supplier.status === 'Approved' ? 'text-emerald-600' : supplier.status === 'Pending' ? 'text-amber-600' : 'text-red-600'
+                          supplier.status === 'Active' ? 'text-emerald-600' : supplier.status === 'PendingApproval' ? 'text-amber-600' : 'text-red-600'
                         }`} />
                       </div>
                       <div>
@@ -187,41 +249,28 @@ export function AdminSuppliers() {
                   <td className="px-5 py-3.5 text-sm text-slate-600">{supplier.region || '-'}</td>
                   <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">{supplier.totalProducts}</td>
                   <td className="px-5 py-3.5 text-sm text-slate-600">{supplier.ratingAvg ? `${supplier.ratingAvg.toFixed(1)} ★` : 'N/A'}</td>
-                  <td className="px-5 py-3.5">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      supplier.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
-                      supplier.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
-                      supplier.status === 'Suspended' ? 'bg-red-100 text-red-700' :
-                      'bg-slate-100 text-slate-600'
-                    }`}>
-                      {supplier.status === 'Approved' && <CheckCircle className="w-3 h-3" />}
-                      {supplier.status === 'Pending' && <Clock className="w-3 h-3" />}
-                      {supplier.status === 'Suspended' && <Ban className="w-3 h-3" />}
-                      {supplier.status === 'Rejected' && <XCircle className="w-3 h-3" />}
-                      {supplier.status}
-                    </span>
-                  </td>
+                  <td className="px-5 py-3.5">{statusBadge(supplier.status)}</td>
                   <td className="px-5 py-3.5 text-end">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={(e) => { e.stopPropagation(); openDetail(supplier); }} className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors">
                         <Eye className="w-4 h-4" />
                       </button>
-                      {supplier.status === 'Pending' && (
+                      {supplier.status === 'PendingApproval' && (
                         <>
-                          <button onClick={(e) => { e.stopPropagation(); updateStatus(supplier.id, 'approve'); }} className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors">
+                          <button onClick={(e) => { e.stopPropagation(); setConfirmTarget({ id: supplier.id, name: supplier.companyName, action: 'approve' }); }} className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors">
                             <CheckCircle className="w-4 h-4" />
                           </button>
-                          <button onClick={(e) => { e.stopPropagation(); updateStatus(supplier.id, 'reject'); }} className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
+                          <button onClick={(e) => { e.stopPropagation(); setConfirmTarget({ id: supplier.id, name: supplier.companyName, action: 'reject' }); }} className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
                             <XCircle className="w-4 h-4" />
                           </button>
                         </>
                       )}
-                      {(supplier.status === 'Approved' || supplier.status === 'Suspended') && (
+                      {(supplier.status === 'Active' || supplier.status === 'Suspended') && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); updateStatus(supplier.id, supplier.status === 'Approved' ? 'suspend' : 'reactivate'); }}
-                          className={`p-1.5 rounded-lg transition-colors ${supplier.status === 'Approved' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                          onClick={(e) => { e.stopPropagation(); setConfirmTarget({ id: supplier.id, name: supplier.companyName, action: supplier.status === 'Active' ? 'suspend' : 'reactivate' }); }}
+                          className={`p-1.5 rounded-lg transition-colors ${supplier.status === 'Active' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
                         >
-                          {supplier.status === 'Approved' ? <Ban className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                          {supplier.status === 'Active' ? <Ban className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                         </button>
                       )}
                     </div>
@@ -237,24 +286,24 @@ export function AdminSuppliers() {
       </div>
 
       {selectedSupplier && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedSupplier(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { setSelectedSupplier(null); setExpandedProduct(null); }}>
           <div className="absolute inset-0 bg-black/30" />
           <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  selectedSupplier.status === 'Approved' ? 'bg-emerald-100' : selectedSupplier.status === 'Pending' ? 'bg-amber-100' : 'bg-red-100'
+                  selectedSupplier.status === 'Active' ? 'bg-emerald-100' : selectedSupplier.status === 'PendingApproval' ? 'bg-amber-100' : 'bg-red-100'
                 }`}>
                   <Store className={`w-5 h-5 ${
-                    selectedSupplier.status === 'Approved' ? 'text-emerald-600' : selectedSupplier.status === 'Pending' ? 'text-amber-600' : 'text-red-600'
+                    selectedSupplier.status === 'Active' ? 'text-emerald-600' : selectedSupplier.status === 'PendingApproval' ? 'text-amber-600' : 'text-red-600'
                   }`} />
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">{selectedSupplier.companyName}</h2>
-                  <p className="text-xs text-slate-500">{selectedSupplier.contactName} • {selectedSupplier.category}</p>
+                  <p className="text-xs text-slate-500">{selectedSupplier.contactName} • {selectedSupplier.categoryNames?.join(', ')}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedSupplier(null)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400">
+              <button onClick={() => { setSelectedSupplier(null); setExpandedProduct(null); }} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -272,15 +321,42 @@ export function AdminSuppliers() {
                     <span>{selectedSupplier.region || '-'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                    <User className="w-4 h-4 text-slate-400 shrink-0" />
                     <span>{selectedSupplier.contactName}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span>{t('joined')} {formatDate(selectedSupplier.joinedDate)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span>{selectedSupplier.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span>{selectedSupplier.phone || '-'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
                     <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span>{t('joined')} {new Date(selectedSupplier.joinedDate).toLocaleDateString()}</span>
+                    <span>{t('lastLogin')} {formatDate(selectedSupplier.lastLoginAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    {selectedSupplier.emailVerified ? (
+                      <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                    ) : (
+                      <X className="w-4 h-4 text-slate-300 shrink-0" />
+                    )}
+                    <span>{t('emailVerified')}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    {selectedSupplier.phoneVerified ? (
+                      <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                    ) : (
+                      <X className="w-4 h-4 text-slate-300 shrink-0" />
+                    )}
+                    <span>{t('phoneVerified')}</span>
                   </div>
                 </div>
-                <div className="mt-2 text-sm text-slate-600">{selectedSupplier.email} • {selectedSupplier.phone}</div>
                 {selectedSupplier.address && (
                   <div className="mt-2 text-sm text-slate-600 flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -289,38 +365,18 @@ export function AdminSuppliers() {
                 )}
               </div>
 
-              {selectedSupplier.status === 'Pending' && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-                  <h3 className="text-xs font-semibold text-amber-800 uppercase tracking-wider mb-3">{t('approvalInfo')}</h3>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="w-4 h-4 text-amber-600" />
-                    <span className="text-sm font-semibold text-amber-800">{t('pendingApproval')}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => updateStatus(selectedSupplier.id, 'approve')} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors">
-                      <CheckCircle className="w-3.5 h-3.5" /> {t('approve')}
-                    </button>
-                    <button onClick={() => updateStatus(selectedSupplier.id, 'reject')} className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors">
-                      <XCircle className="w-3.5 h-3.5" /> {t('reject')}
-                    </button>
-                  </div>
-                </div>
-              )}
-
               <div>
                 <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('supplierStatistics')}</h3>
                 <div className="grid grid-cols-4 gap-2">
                   {[
                     { icon: Package, label: t('products'), value: selectedSupplier.totalProducts, color: 'text-indigo-600', bg: 'bg-indigo-100' },
-                    { icon: ShoppingCart, label: t('ordersFulfilled'), value: '-', color: 'text-emerald-600', bg: 'bg-emerald-100' },
-                    { icon: TrendingUp, label: t('activeOrders'), value: '-', color: 'text-blue-600', bg: 'bg-blue-100' },
-                    { icon: CheckCircle, label: t('rating'), value: selectedSupplier.ratingAvg ? `${selectedSupplier.ratingAvg.toFixed(1)}` : '-', color: 'text-amber-600', bg: 'bg-amber-100' },
+                    { icon: ShoppingCart, label: t('totalOrders'), value: selectedSupplier.totalOrders, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+                    { icon: TrendingUp, label: t('activeOrders'), value: selectedSupplier.activeOrders, color: 'text-blue-600', bg: 'bg-blue-100' },
+                    { icon: Star, label: t('rating'), value: selectedSupplier.ratingAvg ? `${selectedSupplier.ratingAvg.toFixed(1)}` : '-', color: 'text-amber-600', bg: 'bg-amber-100' },
                   ].map((stat) => (
                     <div key={stat.label} className="bg-white border border-slate-200 rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <div className={`w-6 h-6 rounded ${stat.bg} flex items-center justify-center`}>
-                          <stat.icon className={`w-3 h-3 ${stat.color}`} />
-                        </div>
+                      <div className={`w-6 h-6 rounded ${stat.bg} flex items-center justify-center mb-1`}>
+                        <stat.icon className={`w-3 h-3 ${stat.color}`} />
                       </div>
                       <p className="text-lg font-bold text-slate-900">{stat.value}</p>
                       <p className="text-[10px] text-slate-500 mt-0.5">{stat.label}</p>
@@ -339,6 +395,8 @@ export function AdminSuppliers() {
                           <th className="text-start px-4 py-2 text-[10px] font-semibold text-slate-500 uppercase">{t('product')}</th>
                           <th className="text-start px-4 py-2 text-[10px] font-semibold text-slate-500 uppercase">{t('category')}</th>
                           <th className="text-end px-4 py-2 text-[10px] font-semibold text-slate-500 uppercase">{t('stock')}</th>
+                          <th className="text-end px-4 py-2 text-[10px] font-semibold text-slate-500 uppercase">{t('basePrice')}</th>
+                          <th className="text-end px-4 py-2 text-[10px] font-semibold text-slate-500 uppercase">{t('pricingTiers')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -347,6 +405,74 @@ export function AdminSuppliers() {
                             <td className="px-4 py-2.5 text-xs text-slate-700">{p.name}</td>
                             <td className="px-4 py-2.5 text-xs text-slate-500">{p.categoryName}</td>
                             <td className="px-4 py-2.5 text-xs text-slate-700 text-end font-medium">{p.stock} {p.unit}</td>
+                            <td className="px-4 py-2.5 text-xs text-slate-700 text-end font-medium">{formatCurrency(p.price)}</td>
+                            <td className="px-4 py-2.5 text-end">
+                              <button
+                                onClick={() => setExpandedProduct(expandedProduct === i ? null : i)}
+                                disabled={!p.pricingTiers || p.pricingTiers.length === 0}
+                                className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:text-slate-300 disabled:cursor-not-allowed"
+                              >
+                                {p.pricingTiers?.length || 0} tiers
+                                {p.pricingTiers && p.pricingTiers.length > 0 && (
+                                  expandedProduct === i ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {expandedProduct !== null && selectedSupplier.products[expandedProduct]?.pricingTiers?.length > 0 && (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-3 bg-slate-50">
+                              <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">{t('pricingTiers')}</div>
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="border-b border-slate-200">
+                                    <th className="text-start py-1.5 text-[10px] font-semibold text-slate-500">{t('minQty')}</th>
+                                    <th className="text-start py-1.5 text-[10px] font-semibold text-slate-500">{t('maxQty')}</th>
+                                    <th className="text-end py-1.5 text-[10px] font-semibold text-slate-500">{t('unitPrice')}</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {selectedSupplier.products[expandedProduct].pricingTiers.map((tier, ti) => (
+                                    <tr key={ti} className="border-b border-slate-100 last:border-0">
+                                      <td className="py-1.5 text-slate-700">{tier.minQty}</td>
+                                      <td className="py-1.5 text-slate-700">{tier.maxQty ?? '∞'}</td>
+                                      <td className="py-1.5 text-slate-700 text-end font-medium">{formatCurrency(tier.unitPrice)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {selectedSupplier.recentOrders && selectedSupplier.recentOrders.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('orderHistory')}</h3>
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="text-start px-4 py-2 text-[10px] font-semibold text-slate-500 uppercase">{t('orderName')}</th>
+                          <th className="text-start px-4 py-2 text-[10px] font-semibold text-slate-500 uppercase">{t('buyer')}</th>
+                          <th className="text-start px-4 py-2 text-[10px] font-semibold text-slate-500 uppercase">{t('status')}</th>
+                          <th className="text-end px-4 py-2 text-[10px] font-semibold text-slate-500 uppercase">{t('value')}</th>
+                          <th className="text-end px-4 py-2 text-[10px] font-semibold text-slate-500 uppercase">{t('createdOn')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {selectedSupplier.recentOrders.map((order) => (
+                          <tr key={order.id}>
+                            <td className="px-4 py-2.5 text-xs font-medium text-slate-700">{order.title}</td>
+                            <td className="px-4 py-2.5 text-xs text-slate-500">{order.buyerName}</td>
+                            <td className="px-4 py-2.5">{statusBadge(order.status)}</td>
+                            <td className="px-4 py-2.5 text-xs text-slate-700 text-end font-medium">{formatCurrency(order.totalAmount)}</td>
+                            <td className="px-4 py-2.5 text-xs text-slate-500 text-end">{formatDate(order.createdAt)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -355,35 +481,150 @@ export function AdminSuppliers() {
                 </div>
               )}
 
+              {selectedSupplier.approvalLogs && selectedSupplier.approvalLogs.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('activityTimeline')}</h3>
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 max-h-48 overflow-y-auto">
+                    <div className="space-y-3">
+                      {selectedSupplier.approvalLogs.map((log: any, i: number) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                            log.action === 'Approved' ? 'bg-emerald-500' :
+                            log.action === 'Rejected' ? 'bg-red-500' :
+                            log.action === 'Suspended' ? 'bg-amber-500' :
+                            'bg-blue-500'
+                          }`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-slate-700">{log.action}</p>
+                            {log.reason && <p className="text-[10px] text-slate-500 mt-0.5">{log.reason}</p>}
+                            <p className="text-[10px] text-slate-400 mt-0.5">
+                              {log.actorName} • {formatDate(log.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="bg-slate-50 rounded-xl p-5">
                 <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('accountStatus')}</h3>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className={`w-2 h-2 rounded-full ${selectedSupplier.status === 'Approved' ? 'bg-emerald-500' : selectedSupplier.status === 'Pending' ? 'bg-amber-500' : 'bg-red-500'}`} />
-                  <span className="text-sm font-semibold text-slate-900 capitalize">{selectedSupplier.status}</span>
+                <div className="flex items-center gap-2 mb-3">
+                  {statusBadge(selectedSupplier.status)}
                 </div>
-                <div className="flex gap-2">
-                  {selectedSupplier.status === 'Pending' && (
+                {selectedSupplier.status === 'Suspended' && selectedSupplier.suspensionReason && (
+                  <div className="flex items-start gap-2 text-sm text-slate-600 bg-red-50 rounded-lg p-3 mb-3">
+                    <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                    <span>{t('suspensionReason')}: {selectedSupplier.suspensionReason}</span>
+                  </div>
+                )}
+                <div className="flex gap-2 flex-wrap">
+                  {selectedSupplier.status === 'PendingApproval' && (
                     <>
-                      <button onClick={() => updateStatus(selectedSupplier.id, 'approve')} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors">
+                      <button onClick={() => setConfirmTarget({ id: selectedSupplier.id, name: selectedSupplier.companyName, action: 'approve' })}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors"
+                      >
                         <CheckCircle className="w-3.5 h-3.5" /> {t('approve')}
                       </button>
-                      <button onClick={() => updateStatus(selectedSupplier.id, 'reject')} className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors">
+                      <button onClick={() => setConfirmTarget({ id: selectedSupplier.id, name: selectedSupplier.companyName, action: 'reject' })}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors"
+                      >
                         <XCircle className="w-3.5 h-3.5" /> {t('reject')}
                       </button>
                     </>
                   )}
-                  {selectedSupplier.status === 'Approved' && (
-                    <button onClick={() => updateStatus(selectedSupplier.id, 'suspend')} className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-semibold hover:bg-amber-700 transition-colors">
+                  {selectedSupplier.status === 'Active' && (
+                    <button onClick={() => setConfirmTarget({ id: selectedSupplier.id, name: selectedSupplier.companyName, action: 'suspend' })}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-semibold hover:bg-amber-700 transition-colors"
+                    >
                       <Ban className="w-3.5 h-3.5" /> {t('suspendSupplier')}
                     </button>
                   )}
-                  {selectedSupplier.status === 'Suspended' && (
-                    <button onClick={() => updateStatus(selectedSupplier.id, 'reactivate')} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors">
+                  {(selectedSupplier.status === 'Suspended' || selectedSupplier.status === 'Rejected') && (
+                    <button onClick={() => setConfirmTarget({ id: selectedSupplier.id, name: selectedSupplier.companyName, action: 'reactivate' })}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors"
+                    >
                       <CheckCircle className="w-3.5 h-3.5" /> {t('activateSupplier')}
                     </button>
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmTarget && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          onClick={() => { setConfirmTarget(null); setConfirmReason(''); }}
+        >
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                confirmTarget.action === 'approve' ? 'bg-emerald-100' :
+                confirmTarget.action === 'reject' ? 'bg-red-100' :
+                confirmTarget.action === 'suspend' ? 'bg-amber-100' : 'bg-emerald-100'
+              }`}>
+                {confirmTarget.action === 'approve' && <CheckCircle className="w-5 h-5 text-emerald-600" />}
+                {confirmTarget.action === 'reject' && <XCircle className="w-5 h-5 text-red-600" />}
+                {confirmTarget.action === 'suspend' && <Ban className="w-5 h-5 text-amber-600" />}
+                {confirmTarget.action === 'reactivate' && <CheckCircle className="w-5 h-5 text-emerald-600" />}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {confirmTarget.action === 'approve' && t('approveSupplierConfirm')}
+                  {confirmTarget.action === 'reject' && t('rejectSupplierConfirm')}
+                  {confirmTarget.action === 'suspend' && t('suspendBuyerConfirm')}
+                  {confirmTarget.action === 'reactivate' && t('reactivateBuyerConfirm')}
+                </h3>
+                <p className="text-sm text-slate-500 mt-0.5">{confirmTarget.name}</p>
+              </div>
+            </div>
+
+            {(confirmTarget.action === 'reject' || confirmTarget.action === 'suspend') && (
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                  {confirmTarget.action === 'reject' ? t('rejectReason') : t('reasonOptional')}
+                </label>
+                <textarea
+                  value={confirmReason}
+                  onChange={(e) => setConfirmReason(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  placeholder={confirmTarget.action === 'reject' ? t('rejectReasonPlaceholder') : t('reasonPlaceholder')}
+                />
+              </div>
+            )}
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => { setConfirmTarget(null); setConfirmReason(''); }}
+                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                onClick={() => executeAction(confirmTarget.id, confirmTarget.action)}
+                disabled={confirmLoading}
+                className={`flex items-center gap-1.5 px-4 py-2 text-white rounded-lg text-sm font-semibold transition-colors ${
+                  confirmTarget.action === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' :
+                  confirmTarget.action === 'reject' ? 'bg-red-600 hover:bg-red-700' :
+                  confirmTarget.action === 'suspend' ? 'bg-amber-600 hover:bg-amber-700' :
+                  'bg-emerald-600 hover:bg-emerald-700'
+                } disabled:opacity-50`}
+              >
+                {confirmLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {confirmTarget.action === 'approve' && t('confirmApprove')}
+                {confirmTarget.action === 'reject' && t('confirmReject')}
+                {confirmTarget.action === 'suspend' && t('confirmSuspend')}
+                {confirmTarget.action === 'reactivate' && t('confirmReactivate')}
+              </button>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Tags, Search, ToggleRight, ToggleLeft, TrendingUp, TrendingDown, Minus, Flame, Package, Store, DollarSign, ShoppingCart, X, AlertTriangle } from 'lucide-react';
+import { Tags, Search, ToggleRight, ToggleLeft, TrendingUp, TrendingDown, Minus, Flame, Package, Store, DollarSign, ShoppingCart, X, AlertTriangle, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
 import { adminService, type AdminCategory, type AdminCategoryDetail } from '../../services/admin.service';
 
@@ -10,6 +10,15 @@ export function AdminCategories() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<AdminCategoryDetail | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editTarget, setEditTarget] = useState<AdminCategoryDetail | null>(null);
+  const [formNameAr, setFormNameAr] = useState('');
+  const [formNameEn, setFormNameEn] = useState('');
+  const [formSortOrder, setFormSortOrder] = useState(0);
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<AdminCategory | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     adminService.listCategories({ page: 1, limit: 100 })
@@ -46,6 +55,74 @@ export function AdminCategories() {
     }
   };
 
+  const openAddModal = () => {
+    setEditTarget(null);
+    setFormNameAr('');
+    setFormNameEn('');
+    setFormSortOrder(0);
+    setFormError('');
+    setShowForm(true);
+  };
+
+  const openEditModal = () => {
+    if (!selectedCategory) return;
+    setEditTarget(selectedCategory);
+    setFormNameAr(selectedCategory.nameAr);
+    setFormNameEn(selectedCategory.nameEn);
+    setFormSortOrder(selectedCategory.sortOrder);
+    setFormError('');
+    setShowForm(true);
+  };
+
+  const handleFormSubmit = async () => {
+    if (!formNameAr.trim() || !formNameEn.trim()) {
+      setFormError('Both names are required');
+      return;
+    }
+    setFormLoading(true);
+    setFormError('');
+    try {
+      if (editTarget) {
+        await adminService.updateCategory(editTarget.id, {
+          nameAr: formNameAr.trim(),
+          nameEn: formNameEn.trim(),
+          sortOrder: formSortOrder,
+        });
+      } else {
+        await adminService.createCategory({
+          nameAr: formNameAr.trim(),
+          nameEn: formNameEn.trim(),
+          sortOrder: formSortOrder,
+        });
+      }
+      setShowForm(false);
+      setEditTarget(null);
+      setSelectedCategory(null);
+      const res = await adminService.listCategories({ page: 1, limit: 100 });
+      setCategories(res.data.items);
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message || err?.message || 'Failed to save category');
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      await adminService.deleteCategory(deleteTarget.id);
+      setDeleteTarget(null);
+      setSelectedCategory(null);
+      const res = await adminService.listCategories({ page: 1, limit: 100 });
+      setCategories(res.data.items);
+    } catch (err: any) {
+      console.error('Failed to delete category', err);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const totalCategories = categories.length;
   const activeCount = categories.filter((c) => c.isActive).length;
   const inactiveCount = categories.filter((c) => !c.isActive).length;
@@ -74,6 +151,10 @@ export function AdminCategories() {
           <h1 className="text-2xl font-bold text-slate-900">{t('categories')}</h1>
           <p className="text-sm text-slate-500 mt-1">{t('categoryManagement')}</p>
         </div>
+        <button onClick={openAddModal}
+          className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors">
+          <Plus className="w-3.5 h-3.5" /> {t('addCategory')}
+        </button>
       </div>
 
       <div className="grid grid-cols-4 gap-3 mb-6">
@@ -221,8 +302,90 @@ export function AdminCategories() {
                     {selectedCategory.isActive ? <ToggleLeft className="w-3.5 h-3.5" /> : <ToggleRight className="w-3.5 h-3.5" />}
                     {selectedCategory.isActive ? t('deactivateCategory') : t('activateSupplier')}
                   </button>
+                  <button onClick={openEditModal}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100">
+                    <Pencil className="w-3.5 h-3.5" /> {t('editCategory')}
+                  </button>
+                  <button onClick={() => setDeleteTarget(selectedCategory)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors bg-red-50 text-red-700 border border-red-200 hover:bg-red-100">
+                    <Trash2 className="w-3.5 h-3.5" /> {t('deleteCategory')}
+                  </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { if (!formLoading) { setShowForm(false); setEditTarget(null); } }}>
+          <div className="absolute inset-0 bg-black/30" />
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                {editTarget ? <Pencil className="w-5 h-5 text-indigo-600" /> : <Plus className="w-5 h-5 text-indigo-600" />}
+              </div>
+              <h2 className="text-lg font-bold text-slate-900">{editTarget ? t('editCategory') : t('addCategory')}</h2>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Name (Arabic) *</label>
+                <input type="text" value={formNameAr} onChange={(e) => setFormNameAr(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Name (English) *</label>
+                <input type="text" value={formNameEn} onChange={(e) => setFormNameEn(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
+                <input type="number" value={formSortOrder} onChange={(e) => setFormSortOrder(Number(e.target.value))}
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+
+              {formError && <p className="text-xs text-red-600">{formError}</p>}
+
+              <div className="flex gap-2 justify-end pt-2">
+                <button onClick={() => { setShowForm(false); setEditTarget(null); }}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+                  {t('cancel')}
+                </button>
+                <button onClick={handleFormSubmit} disabled={formLoading}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50">
+                  {formLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t('save')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setDeleteTarget(null)}>
+          <div className="absolute inset-0 bg-black/30" />
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">{t('deleteConfirm')} &quot;{deleteTarget.nameEn}&quot;?</h3>
+                <p className="text-sm text-slate-500 mt-0.5">{t('deleteCategory')}</p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setDeleteTarget(null)}
+                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+                {t('cancel')}
+              </button>
+              <button onClick={handleDelete} disabled={deleteLoading}
+                className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">
+                {deleteLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {t('delete')}
+              </button>
             </div>
           </div>
         </div>

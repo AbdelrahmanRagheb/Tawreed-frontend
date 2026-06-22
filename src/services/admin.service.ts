@@ -40,11 +40,27 @@ export interface AdminUser {
 }
 
 export interface AdminUserDetail extends AdminUser {
+  businessType: string | null;
+  taxId: string | null;
+  address: string | null;
+  ratingAvg: number;
+  emailVerified: boolean;
+  phoneVerified: boolean;
   suspensionReason: string | null;
   ordersCreated: number;
   ordersJoined: number;
   completedOrders: number;
   cancelledOrders: number;
+  recentOrders: BuyerOrderItem[];
+}
+
+export interface BuyerOrderItem {
+  id: string;
+  title: string;
+  status: string;
+  estimatedTotal: number;
+  participantsCount: number;
+  createdAt: string;
 }
 
 export interface AdminSupplier {
@@ -65,8 +81,39 @@ export interface AdminSupplier {
 export interface AdminSupplierDetail extends AdminSupplier {
   categoryNames: string[];
   address: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  lastLoginAt: string | null;
+  suspensionReason: string | null;
+  totalOrders: number;
+  activeOrders: number;
   approvalLogs: any[];
-  products: { name: string; categoryName: string; stock: number; unit: string }[];
+  products: AdminSupplierProductItem[];
+  recentOrders: SupplierOrderItem[];
+}
+
+export interface AdminSupplierProductItem {
+  name: string;
+  categoryName: string;
+  stock: number;
+  unit: string;
+  price: number;
+  pricingTiers: PricingTierItem[];
+}
+
+export interface PricingTierItem {
+  minQty: number;
+  maxQty: number | null;
+  unitPrice: number;
+}
+
+export interface SupplierOrderItem {
+  id: string;
+  title: string;
+  buyerName: string;
+  status: string;
+  totalAmount: number;
+  createdAt: string;
 }
 
 export interface AdminOrderListItem {
@@ -103,8 +150,50 @@ export interface AdminRegion {
   nameAr: string;
   nameEn: string;
   parentId: string | null;
+  type: string;
   isActive: boolean;
   createdAt: string;
+}
+
+export interface RegionTreeNode {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  parentId: string | null;
+  type: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+  parentName: string | null;
+  children: RegionTreeNode[];
+}
+
+export interface AdminProfile {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  role: string;
+  status: string;
+  avatarUrl: string | null;
+  preferredLang: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+}
+
+export interface UpdateAdminProfileRequest {
+  fullName?: string;
+  phone?: string;
+  avatarUrl?: string;
+  preferredLang?: string;
+}
+
+export interface RegionStats {
+  governorates: number;
+  cities: number;
+  villages: number;
 }
 
 export const adminService = {
@@ -171,12 +260,39 @@ export const adminService = {
   activateCategory: (categoryId: string) =>
     http.post(`/admin/categories/${categoryId}/activate`),
 
+  deleteCategory: (categoryId: string) =>
+    http.delete(`/admin/categories/${categoryId}/delete`),
+
   listRegions: (params?: { search?: string }) =>
     http.get<AdminRegion[]>('/admin/regions', { params }),
 
-  createRegion: (params: { nameAr: string; nameEn: string; parentId?: string }) =>
+  createRegion: (params: { nameAr: string; nameEn: string; parentId?: string; type: string }) =>
     http.post('/admin/regions', null, { params }),
 
   toggleRegion: (regionId: string) =>
     http.post(`/admin/regions/${regionId}/toggle`),
+
+  getRegionTree: () =>
+    http.get<RegionTreeNode[]>('/admin/regions/tree'),
+
+  getRegionRoots: () =>
+    http.get<RegionTreeNode[]>('/admin/regions/roots'),
+
+  getRegionStats: () =>
+    http.get<RegionStats>('/admin/regions/stats'),
+
+  getRegionChildren: (parentId: string) =>
+    http.get<RegionTreeNode[]>(`/admin/regions/${parentId}/children`),
+
+  updateRegion: (regionId: string, data: { nameAr: string; nameEn: string; parentId?: string | null; type?: string | null }) =>
+    http.put(`/admin/regions/${regionId}`, data),
+
+  deleteRegion: (regionId: string) =>
+    http.delete(`/admin/regions/${regionId}`),
+
+  getProfile: () =>
+    http.get<AdminProfile>('/admin/profile'),
+
+  updateProfile: (data: UpdateAdminProfileRequest) =>
+    http.patch('/admin/profile', data),
 };

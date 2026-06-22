@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Users, Package, DollarSign, Clock, Truck,
-  MapPin, Calendar, TrendingDown, UserPlus, Edit3, LogOut, Activity, AlertCircle,
+  MapPin, Calendar, UserPlus, Edit3, LogOut, Activity, AlertCircle,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
 import { buyerService, type OrderDetailResponse } from '../../services/buyer.service';
@@ -131,20 +131,11 @@ export function OrderDetail() {
                     <tr key={product.productId} className="border-b border-slate-50 last:border-0">
                       <td className="px-5 py-4">
                         <p className="text-sm font-medium text-slate-900">{product.productName}</p>
-                        {product.discountPercent > 0 && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mt-0.5">
-                            <TrendingDown className="w-3 h-3" />
-                            {product.discountPercent}% {t('discount')}
-                          </span>
-                        )}
                       </td>
                       <td className="px-5 py-4 text-sm text-slate-700">{product.currentQuantity}/{product.targetQuantity}</td>
                       <td className="px-5 py-4 text-sm text-slate-700">{product.unit}</td>
                       <td className="px-5 py-4">
-                        {product.originalPrice > product.currentPrice && (
-                          <span className="text-xs text-slate-400 line-through mr-1">{product.originalPrice} EGP</span>
-                        )}
-                        <span className="text-sm font-bold text-slate-900">{product.currentPrice} EGP</span>
+                        <span className="text-sm font-bold text-slate-900">{product.unitPrice ? `${product.unitPrice} EGP` : '-'}</span>
                       </td>
                     </tr>
                   ))}

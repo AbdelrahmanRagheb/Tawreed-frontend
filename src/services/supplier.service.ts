@@ -62,6 +62,7 @@ export interface UpdateProfileRequest {
   phone?: string;
   businessName?: string;
   address?: string;
+  regionId?: string;
   avatar?: string;
   preferredLang?: string;
 }
@@ -78,6 +79,44 @@ export interface SupplierOrderItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+}
+
+export interface PricingTier {
+  id: string;
+  supplierProductId: string;
+  minQty: number;
+  maxQty: number | null;
+  unitPrice: number;
+}
+
+export interface CreatePricingTierRequest {
+  minQty: number;
+  maxQty: number | null;
+  unitPrice: number;
+}
+
+export interface UpdatePricingTierRequest {
+  minQty: number;
+  maxQty: number | null;
+  unitPrice: number;
+}
+
+export interface SupplierProductListItem {
+  id: string;
+  supplierId: string;
+  productId: string;
+  productName: string;
+  description: string | null;
+  categoryId: string;
+  categoryName: string;
+  unitId: string;
+  unit: string;
+  imageUrl: string | null;
+  price: number;
+  stock: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string | null;
 }
 
 export interface SupplierOrderListItem {
@@ -107,6 +146,19 @@ export interface DeliveryListItem {
   /* other fields as returned by the API */
 }
 
+export interface AddSupplierProductRequest {
+  productId: string;
+  price: number;
+  stock: number;
+  tiers?: { minQty: number; maxQty: number | null; unitPrice: number }[];
+}
+
+export interface UpdateSupplierProductRequest {
+  price?: number;
+  stock?: number;
+  isActive?: boolean;
+}
+
 export interface UpdateDeliveryStatusRequest {
   status: string;
   trackingNotes?: string;
@@ -116,6 +168,33 @@ export interface UpdateDeliveryStatusRequest {
 export const supplierService = {
   getDashboard: () =>
     http.get<SupplierDashboardResponse>('/supplier/dashboard'),
+
+  listProducts: () =>
+    http.get<SupplierProductListItem[]>('/supplier/products'),
+
+  addProduct: (data: AddSupplierProductRequest) =>
+    http.post<SupplierProductListItem>('/supplier/products', data),
+
+  updateProduct: (productId: string, data: UpdateSupplierProductRequest) =>
+    http.put<SupplierProductListItem>(`/supplier/products/${productId}`, data),
+
+  removeProduct: (productId: string) =>
+    http.delete(`/supplier/products/${productId}`),
+
+  getProduct: (productId: string) =>
+    http.get<SupplierProductListItem>(`/supplier/products/${productId}`),
+
+  getTiers: (productId: string) =>
+    http.get<PricingTier[]>(`/supplier/products/${productId}/tiers`),
+
+  createTier: (productId: string, data: CreatePricingTierRequest) =>
+    http.post<PricingTier>(`/supplier/products/${productId}/tiers`, data),
+
+  updateTier: (productId: string, tierId: string, data: UpdatePricingTierRequest) =>
+    http.put<PricingTier>(`/supplier/products/${productId}/tiers/${tierId}`, data),
+
+  deleteTier: (productId: string, tierId: string) =>
+    http.delete(`/supplier/products/${productId}/tiers/${tierId}`),
 
   getProfile: () =>
     http.get<SupplierProfile>('/supplier/profile'),

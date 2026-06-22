@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Users, Store, ShoppingCart, DollarSign, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Store, ShoppingCart, DollarSign, Clock, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../i18n';
 import { adminService, type AdminDashboardResponse } from '../../services/admin.service';
 
 export function AdminDashboard() {
+  const navigate = useNavigate();
   const { language, t } = useLanguage();
   const [data, setData] = useState<AdminDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,9 +40,10 @@ export function AdminDashboard() {
   const { kpi, recentOrders, pendingSupplierApplications } = data;
 
   const stats = [
-    { icon: Users, label: t('totalUsers'), value: kpi.totalUsers.toLocaleString(), color: 'text-indigo-600', bg: 'bg-indigo-100' },
-    { icon: Store, label: t('totalSuppliers'), value: kpi.totalSuppliers.toString(), color: 'text-emerald-600', bg: 'bg-emerald-100' },
-    { icon: ShoppingCart, label: t('orders'), value: kpi.totalOrders.toString(), color: 'text-blue-600', bg: 'bg-blue-100' },
+    { icon: Users, label: t('totalUsers'), value: kpi.totalUsers.toLocaleString(), color: 'text-indigo-600', bg: 'bg-indigo-100', path: '/admin/buyers' },
+    { icon: Clock, label: t('pendingApproval'), value: kpi.pendingSuppliers.toString(), color: 'text-amber-600', bg: 'bg-amber-100', path: '/admin/suppliers?status=PendingApproval' },
+    { icon: Store, label: t('totalSuppliers'), value: kpi.totalSuppliers.toString(), color: 'text-emerald-600', bg: 'bg-emerald-100', path: '/admin/suppliers' },
+    { icon: ShoppingCart, label: t('orders'), value: kpi.totalOrders.toString(), color: 'text-blue-600', bg: 'bg-blue-100', path: '/admin/orders' },
     { icon: DollarSign, label: 'Revenue', value: `EGP ${(kpi.newUsersThisMonth * 1000).toLocaleString()}`, color: 'text-amber-600', bg: 'bg-amber-100' },
   ];
 
@@ -51,11 +54,13 @@ export function AdminDashboard() {
         <p className="text-sm text-slate-500 mt-1">{t('platformOverview')}</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon;
+          const Card = stat.path ? 'button' : 'div';
           return (
-            <div key={stat.label} className="bg-white rounded-xl border border-slate-200 p-4">
+            <Card key={stat.label} onClick={stat.path ? () => navigate(stat.path!) : undefined}
+              className={`bg-white rounded-xl border border-slate-200 p-4 text-start ${stat.path ? 'cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all' : ''}`}>
               <div className="flex items-center justify-between mb-3">
                 <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
                   <Icon className={`w-5 h-5 ${stat.color}`} />
@@ -63,7 +68,7 @@ export function AdminDashboard() {
               </div>
               <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
               <p className="text-xs text-slate-500 mt-1">{stat.label}</p>
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -79,7 +84,8 @@ export function AdminDashboard() {
           ) : (
             <div className="divide-y divide-slate-100">
               {pendingSupplierApplications.map((s: any, idx: number) => (
-                <div key={s.id || idx} className="px-5 py-3.5 flex items-center justify-between hover:bg-slate-50">
+                <button key={s.id || idx} onClick={() => navigate('/admin/suppliers?status=PendingApproval')}
+                  className="w-full px-5 py-3.5 flex items-center justify-between hover:bg-slate-50 text-start">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
                       <Store className="w-4 h-4 text-amber-600" />
@@ -89,7 +95,7 @@ export function AdminDashboard() {
                     </div>
                   </div>
                   <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">{t('pending')}</span>
-                </div>
+                </button>
               ))}
             </div>
           )}

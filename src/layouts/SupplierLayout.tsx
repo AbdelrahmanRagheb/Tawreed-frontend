@@ -1,13 +1,78 @@
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, Package, Truck, Users, Settings, User, LogOut, PackageSearch, Globe, Archive, Bell, FileText } from 'lucide-react';
+import { LayoutDashboard, Package, Truck, Users, Settings, User, LogOut, PackageSearch, Globe, Archive, Bell, FileText, Clock, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useLanguage } from '../i18n';
+import { syncPreferredLang } from '../services/auth.service';
+import { supplierService } from '../services/supplier.service';
 
 export function SupplierLayout() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
   const { language, setLanguage, t } = useLanguage();
+  const [approvalStatus, setApprovalStatus] = useState<{ status: string; isApproved: boolean } | null>(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const res = await supplierService.getRegistrationStatus();
+        setApprovalStatus(res.data);
+      } catch {
+        setApprovalStatus({ status: 'PendingApproval', isApproved: false });
+      } finally {
+        setChecking(false);
+      }
+    };
+    check();
+  }, []);
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!approvalStatus?.isApproved) {
+    const isPending = approvalStatus?.status === 'PendingApproval';
+    const isRejected = approvalStatus?.status === 'Rejected';
+    const isSuspended = approvalStatus?.status === 'Suspended';
+
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
+          <div className={`w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center ${
+            isPending ? 'bg-amber-100' : isRejected ? 'bg-red-100' : 'bg-red-100'
+          }`}>
+            {isPending ? (
+              <Clock className="w-8 h-8 text-amber-600" />
+            ) : (
+              <XCircle className="w-8 h-8 text-red-600" />
+            )}
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">
+            {isPending ? t('accountUnderReview') : isRejected ? t('accountRejected') : t('accountSuspended')}
+          </h2>
+          <p className="text-sm text-slate-500 mb-6">
+            {isPending
+              ? t('pendingApprovalMessage')
+              : isRejected
+                ? t('rejectedMessage')
+                : t('suspendedMessage')}
+          </p>
+          <button
+            onClick={() => { logout(); navigate('/'); }}
+            className="px-6 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors"
+          >
+            {t('goHome')}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleLogout = () => {
     logout();
@@ -54,7 +119,11 @@ export function SupplierLayout() {
         </nav>
         <div className="p-4 border-t border-slate-200 space-y-1">
           <button
-            onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+            onClick={() => {
+              const newLang = language === 'en' ? 'ar' : 'en';
+              setLanguage(newLang);
+              syncPreferredLang(user?.role, newLang);
+            }}
             className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
           >
             <Globe className="w-5 h-5" />
@@ -76,7 +145,11 @@ export function SupplierLayout() {
                 <span className="text-lg font-bold tracking-tight text-slate-800 uppercase">{t('appTitle')}</span>
              </div>
              <button
-               onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+               onClick={() => {
+                 const newLang = language === 'en' ? 'ar' : 'en';
+                 setLanguage(newLang);
+                 syncPreferredLang(user?.role, newLang);
+               }}
                className="text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1 font-medium"
              >
                <Globe className="w-5 h-5" />

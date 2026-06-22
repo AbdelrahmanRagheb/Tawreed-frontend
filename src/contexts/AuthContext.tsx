@@ -9,6 +9,7 @@ interface User {
   email: string;
   role: Role;
   avatar?: string | null;
+  preferredLang: string;
 }
 
 interface AuthContextType {
@@ -27,9 +28,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem('user');
+    const langOverride = localStorage.getItem('preferredLang');
     if (stored) {
       try {
-        setUser(JSON.parse(stored));
+        const parsed = JSON.parse(stored) as User;
+        if (langOverride && langOverride !== parsed.preferredLang) {
+          parsed.preferredLang = langOverride;
+          localStorage.setItem('user', JSON.stringify(parsed));
+        }
+        setUser(parsed);
       } catch {
         localStorage.removeItem('user');
       }
@@ -48,8 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: apiUser.email,
       role: apiUser.role.toLowerCase() as Role,
       avatar: apiUser.avatar,
+      preferredLang: apiUser.preferredLang || 'en',
     };
     localStorage.setItem('user', JSON.stringify(mappedUser));
+    localStorage.setItem('preferredLang', mappedUser.preferredLang);
     setUser(mappedUser);
   }, []);
 

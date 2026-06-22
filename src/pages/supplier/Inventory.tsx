@@ -1,28 +1,50 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, AlertTriangle, CheckCircle, Package } from 'lucide-react';
 import { useLanguage } from '../../i18n';
-import { mockProductList } from '../../data';
-
-const productUnits: Record<string, string> = {
-  'sp1': 'KG', 'sp2': 'KG', 'sp3': 'L', 'sp4': 'TIN',
-  'sp5': 'BOX', 'sp6': 'JAR',
-};
+import { supplierService, type SupplierProductListItem } from '../../services/supplier.service';
 
 export function SupplierInventory() {
   const { language, t } = useLanguage();
+  const [products, setProducts] = useState<SupplierProductListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'low' | 'out'>('all');
 
-  const filtered = mockProductList.filter((p) => {
-    const nameMatch = p.name[language].toLowerCase().includes(search.toLowerCase());
+  useEffect(() => {
+    supplierService.listProducts()
+      .then((res) => setProducts(res.data))
+      .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load products'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = products.filter((p) => {
+    const nameMatch = (p.productName || '').toLowerCase().includes(search.toLowerCase());
     if (!nameMatch) return false;
     if (filter === 'low') return p.stock < 100;
     if (filter === 'out') return p.stock === 0;
     return true;
   });
 
-  const criticalCount = mockProductList.filter((p) => p.stock < 50).length;
-  const lowCount = mockProductList.filter((p) => p.stock >= 50 && p.stock < 100).length;
+  const criticalCount = products.filter((p) => p.stock < 50).length;
+  const lowCount = products.filter((p) => p.stock >= 50 && p.stock < 100).length;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <AlertTriangle className="w-10 h-10 text-red-400 mx-auto mb-3" />
+        <p className="text-sm text-red-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -34,7 +56,7 @@ export function SupplierInventory() {
       {/* Alert Cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-2xl font-bold text-slate-900">{mockProductList.length}</p>
+          <p className="text-2xl font-bold text-slate-900">{products.length}</p>
           <p className="text-xs text-slate-500 mt-1">{t('totalProducts')}</p>
         </div>
         <div className="bg-amber-50 rounded-xl border border-amber-200 p-4">
@@ -96,7 +118,7 @@ export function SupplierInventory() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.map((product) => {
-                const unit = productUnits[product.id] || 'UNIT';
+                const unit = product.unit || 'UNIT';
                 const stockStatus = product.stock === 0 ? 'out' : product.stock < 50 ? 'critical' : product.stock < 100 ? 'low' : 'ok';
                 const statusConfig = {
                   out: { label: t('outOfStock'), color: 'text-red-700', bg: 'bg-red-100' },
@@ -112,9 +134,15 @@ export function SupplierInventory() {
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-                          <img src={product.image} alt={product.name[language]} className="w-full h-full object-cover" />
+                          {product.imageUrl ? (
+                            <img src={product.imageUrl} alt={product.productName} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="w-5 h-5 text-slate-400" />
+                            </div>
+                          )}
                         </div>
-                        <span className="text-sm font-medium text-slate-900">{product.name[language]}</span>
+                        <span className="text-sm font-medium text-slate-900">{product.productName}</span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5">
@@ -143,7 +171,9 @@ export function SupplierInventory() {
           </table>
         </div>
         {filtered.length === 0 && (
-          <div className="px-5 py-12 text-center text-sm text-slate-500">{t('noProductsFound')}</div>
+          <div className="px-5 py-12 text-center text-sm text-slate-500">
+            {products.length === 0 ? t('noProductsYet') : t('noProductsFound')}
+          </div>
         )}
       </div>
     </div>

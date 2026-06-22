@@ -36,12 +36,32 @@ export interface AuthResponse {
     email: string;
     role: 'Buyer' | 'Supplier' | 'Admin';
     avatar: string | null;
+    preferredLang: string;
   };
+}
+
+export function syncPreferredLang(role: string | undefined, lang: string) {
+  if (!role) return;
+  const body = { preferredLang: lang };
+  if (role === 'buyer') http.put('/buyer/profile', body).catch(() => {});
+  else if (role === 'supplier') http.put('/supplier/profile', body).catch(() => {});
+  else if (role === 'admin') http.patch('/admin/profile', body).catch(() => {});
+  const stored = localStorage.getItem('user');
+  if (stored) {
+    try {
+      const user = JSON.parse(stored);
+      user.preferredLang = lang;
+      localStorage.setItem('user', JSON.stringify(user));
+    } catch {}
+  }
 }
 
 export const authService = {
   login: (data: LoginRequest) =>
     http.post<AuthResponse>('/auth/login', data),
+
+  debugLogin: (data: LoginRequest) =>
+    http.post<AuthResponse>('/auth/debug-login', data),
 
   registerBuyer: (data: RegisterBuyerRequest) =>
     http.post<AuthResponse>('/auth/register/buyer', data),

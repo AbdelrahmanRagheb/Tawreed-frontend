@@ -78,13 +78,12 @@ export interface OrderProduct {
   currentQuantity: number;
   targetQuantity: number;
   unit: string;
-  currentPrice: number;
-  originalPrice: number;
-  discountPercent: number;
+  unitPrice?: number;
+  supplierProductId?: string;
 }
 
 export interface ParticipantItem {
-  productId: string;
+  groupOrderItemId: string;
   productName: string;
   quantity: number;
 }
@@ -125,29 +124,53 @@ export interface OrderDetailResponse {
 export interface CreateOrderRequest {
   title: string;
   description?: string;
-  supplierId: string;
-  regionId: string;
   deadline: string;
   items: { productId: string; targetQuantity: number }[];
 }
 
 export interface JoinOrderRequest {
-  items: { productId: string; quantity: number }[];
+  items: { groupOrderItemId: string; quantity: number }[];
 }
 
 export interface JoinOrderResponse {
   message: string;
   participant: Participant;
-  updatedProducts: { productId: string; currentQuantity: number }[];
+  updatedProducts: { itemId: string; productId: string }[];
 }
 
 export interface LeaveOrderResponse {
   message: string;
-  updatedProducts: { productId: string; currentQuantity: number }[];
 }
 
 export interface UpdateItemsRequest {
-  items: { productId: string; quantity: number }[];
+  items: { groupOrderItemId: string; quantity: number }[];
+}
+
+export interface BuyerProfile {
+  name: string;
+  email: string;
+  phone: string;
+  businessName: string;
+  businessType: string;
+  taxId: string | null;
+  avatar: string | null;
+  joinedDate: string;
+  address: string | null;
+  regionName: string;
+  regionId: string;
+  preferredLang: string;
+}
+
+export interface BuyerUpdateProfileRequest {
+  fullName?: string;
+  phone?: string;
+  businessName?: string;
+  businessType?: string;
+  taxId?: string;
+  address?: string;
+  regionId?: string;
+  avatar?: string;
+  preferredLang?: string;
 }
 
 export const buyerService = {
@@ -185,4 +208,10 @@ export const buyerService = {
 
   updateParticipantItems: (orderId: string, participantId: string, data: UpdateItemsRequest) =>
     http.put(`/buyer/orders/${orderId}/participants/${participantId}/items`, data),
+
+  getProfile: () =>
+    http.get<BuyerProfile>('/buyer/profile'),
+
+  updateProfile: (data: BuyerUpdateProfileRequest) =>
+    http.put('/buyer/profile', data),
 };

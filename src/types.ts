@@ -5,19 +5,14 @@ export interface LocalizedString {
 
 export interface Product {
   id: string;
-  name: LocalizedString;
-  description: LocalizedString;
-  price: number;
-  imageUrl: string;
-  category: LocalizedString;
-  stock: number;
+  name: string;
 }
 
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface OrderItem {
-  productId: string;
-  productName: LocalizedString;
+  supplierProductId: string;
+  productName: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -197,19 +192,17 @@ export interface GroupOrderParticipant {
   name: string;
   avatar?: string;
   joinedAt: string;
-  items: { productId: string; quantity: number }[];
+  items: { groupOrderItemId: string; quantity: number }[];
 }
 
 export interface GroupOrderProductDetail {
   productId: string;
-  productName: LocalizedString;
+  productName: string;
   currentQuantity: number;
   targetQuantity: number;
   unit: string;
-  currentPrice: number;
-  originalPrice: number;
-  discountAchieved: boolean;
-  discountPercent: number;
+  unitPrice?: number;
+  supplierProductId?: string;
 }
 
 export interface GroupOrderActivity {

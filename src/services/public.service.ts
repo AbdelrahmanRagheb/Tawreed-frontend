@@ -3,11 +3,13 @@ import http from '../lib/http';
 export interface PublicProduct {
   id: string;
   name: string;
-  price: number;
-  imageUrl: string;
+  description: string | null;
+  categoryId: string;
   categoryName: string;
-  stock: number;
-  unit?: string;
+  unitId: string;
+  unit: string;
+  createdAt: string;
+  updatedAt: string | null;
 }
 
 export interface PublicCategory {
@@ -20,11 +22,18 @@ export interface PublicCategory {
   sortOrder?: number;
 }
 
+export interface PublicBusinessType {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+}
+
 export interface PublicRegion {
   id: string;
   nameAr: string;
   nameEn: string;
   parentId: string | null;
+  type?: string;
   isActive?: boolean;
 }
 
@@ -48,44 +57,53 @@ export interface NotificationItem {
 
 export const publicService = {
   listProducts: () =>
-    http.get<PublicProduct[]>('/api/products'),
+    http.get<PublicProduct[]>('/products'),
 
   getProduct: (id: string) =>
-    http.get<PublicProduct>(`/api/products/${id}`),
+    http.get<PublicProduct>(`/products/${id}`),
+
+  listBusinessTypes: () =>
+    http.get<PublicBusinessType[]>('/business-types'),
 
   listCategories: () =>
-    http.get<PublicCategory[]>('/api/categories'),
+    http.get<PublicCategory[]>('/categories'),
 
   getRootCategories: () =>
-    http.get<PublicCategory[]>('/api/categories/root'),
+    http.get<PublicCategory[]>('/categories/root'),
 
   getCategory: (id: string) =>
-    http.get<PublicCategory>(`/api/categories/${id}`),
+    http.get<PublicCategory>(`/categories/${id}`),
 
   listRegions: () =>
-    http.get<PublicRegion[]>('/api/regions'),
+    http.get<PublicRegion[]>('/regions'),
+
+  searchRegions: (q: string) =>
+    http.get<PublicRegion[]>(`/regions/search?q=${encodeURIComponent(q)}`),
 
   getRootRegions: () =>
-    http.get<PublicRegion[]>('/api/regions/root'),
+    http.get<PublicRegion[]>('/regions/root'),
 
   getRegion: (id: string) =>
-    http.get<PublicRegion>(`/api/regions/${id}`),
+    http.get<PublicRegion>(`/regions/${id}`),
+
+  getRegionChildren: (parentId: string) =>
+    http.get<PublicRegion[]>(`/regions/${parentId}/children`),
 
   listGroupOrders: () =>
-    http.get<PublicGroupOrder[]>('/api/group-orders'),
+    http.get<PublicGroupOrder[]>('/group-orders'),
 
   getGroupOrder: (id: string) =>
-    http.get<PublicGroupOrder>(`/api/group-orders/${id}`),
+    http.get<PublicGroupOrder>(`/group-orders/${id}`),
 
   getUnreadNotifications: (userId: string) =>
-    http.get<NotificationItem[]>(`/api/notifications/unread/${userId}`),
+    http.get<NotificationItem[]>(`/notifications/unread/${userId}`),
 
   getUnreadNotificationCount: (userId: string) =>
-    http.get<{ count: number }>(`/api/notifications/unread-count/${userId}`),
+    http.get<{ count: number }>(`/notifications/unread-count/${userId}`),
 
   markAsRead: (notificationId: string) =>
-    http.patch(`/api/notifications/${notificationId}/read`),
+    http.patch(`/notifications/${notificationId}/read`),
 
   markAllAsRead: (userId: string) =>
-    http.patch(`/api/notifications/read-all/${userId}`),
+    http.patch(`/notifications/read-all/${userId}`),
 };

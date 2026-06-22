@@ -1,93 +1,250 @@
-import { useState } from 'react';
-import { Plus, Search, Edit3, Trash2, AlertTriangle, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, Edit3, Trash2, AlertTriangle, X, Layers, Save, Plus, ChevronDown, ChevronUp, Package, ShoppingBag } from 'lucide-react';
 import { useLanguage } from '../../i18n';
-import { mockProductList } from '../../data';
-import type { SupplierProduct } from '../../types';
+import { publicService, type PublicProduct } from '../../services/public.service';
+import { supplierService, type SupplierProductListItem, type PricingTier, type CreatePricingTierRequest, type UpdatePricingTierRequest } from '../../services/supplier.service';
 
-const productUnits: Record<string, string> = {
-  'sp1': 'KG', 'sp2': 'KG', 'sp3': 'L', 'sp4': 'TIN',
-  'sp5': 'BOX', 'sp6': 'JAR',
-};
+type Tab = 'mine' | 'browse';
 
-type ModalMode = 'none' | 'add' | 'edit' | 'delete';
-
-const emptyForm = { nameEn: '', nameAr: '', price: 0, stock: 0, category: '', status: 'active' as const, image: '' };
+const emptyTierForm: CreatePricingTierRequest = { minQty: 1, maxQty: null, unitPrice: 0 };
 
 export function SupplierProducts() {
   const { language, t } = useLanguage();
   const [search, setSearch] = useState('');
-  const [products, setProducts] = useState<SupplierProduct[]>(mockProductList);
-  const [modal, setModal] = useState<ModalMode>('none');
-  const [selectedProduct, setSelectedProduct] = useState<SupplierProduct | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [tab, setTab] = useState<Tab>('mine');
 
-  const nextId = () => `sp${Date.now()}`;
+  const [catalogProducts, setCatalogProducts] = useState<PublicProduct[]>([]);
+  const [supplierProducts, setSupplierProducts] = useState<SupplierProductListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const openAdd = () => {
-    setForm(emptyForm);
-    setSelectedProduct(null);
-    setModal('add');
-  };
+  // Add modal
+  const [addModalProduct, setAddModalProduct] = useState<PublicProduct | null>(null);
+  const [addForm, setAddForm] = useState({ price: 0, stock: 0 });
+  const [addTiers, setAddTiers] = useState<{ minQty: number; maxQty: number | null; unitPrice: number }[]>([]);
 
-  const openEdit = (p: SupplierProduct) => {
-    setForm({ nameEn: p.name.en, nameAr: p.name.ar, price: p.price, stock: p.stock, category: p.category, status: p.status, image: p.image });
-    setSelectedProduct(p);
-    setModal('edit');
-  };
+  // Detail modal
+  const [detailProduct, setDetailProduct] = useState<SupplierProductListItem | null>(null);
+  const [detailForm, setDetailForm] = useState({ price: 0, stock: 0, isActive: true });
 
-  const openDelete = (p: SupplierProduct) => {
-    setSelectedProduct(p);
-    setModal('delete');
-  };
+  // Delete confirm
+  const [deleteTarget, setDeleteTarget] = useState<SupplierProductListItem | null>(null);
 
-  const handleSave = () => {
-    if (!form.nameEn.trim() || !form.nameAr.trim() || !form.category.trim()) return;
-    const newProduct: SupplierProduct = {
-      id: selectedProduct ? selectedProduct.id : nextId(),
-      name: { en: form.nameEn, ar: form.nameAr },
-      price: form.price,
-      stock: form.stock,
-      category: form.category,
-      status: form.status,
-      image: form.image || 'https://images.unsplash.com/photo-1552767059-ce1833656d5b?auto=format&fit=crop&q=80&w=800',
-    };
-    if (selectedProduct) {
-      setProducts((prev) => prev.map((p) => (p.id === selectedProduct.id ? newProduct : p)));
-    } else {
-      setProducts((prev) => [newProduct, ...prev]);
+  // Tier state (inside detail modal)
+  const [tiers, setTiers] = useState<PricingTier[]>([]);
+  const [tiersLoading, setTiersLoading] = useState(false);
+  const [tierForm, setTierForm] = useState<CreatePricingTierRequest>(emptyTierForm);
+  const [editingTierId, setEditingTierId] = useState<string | null>(null);
+  const [tierError, setTierError] = useState('');
+  const [tiersExpanded, setTiersExpanded] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [catRes, supRes] = await Promise.all([
+        publicService.listProducts(),
+        supplierService.listProducts(),
+      ]);
+      setCatalogProducts(catRes.data);
+      setSupplierProducts(supRes.data);
+      if (supRes.data.length === 0) setTab('browse');
+    } catch {
+      setError('Failed to load products');
+    } finally {
+      setLoading(false);
     }
-    setModal('none');
-  };
+  }, []);
 
-  const handleDelete = () => {
-    if (!selectedProduct) return;
-    setProducts((prev) => prev.filter((p) => p.id !== selectedProduct.id));
-    setModal('none');
-  };
+  useEffect(() => { loadData(); }, [loadData]);
 
-  const filtered = products.filter((p) =>
-    p.name[language].toLowerCase().includes(search.toLowerCase())
+  const supplierByProductId = new Map<string, SupplierProductListItem>();
+  supplierProducts.forEach(sp => supplierByProductId.set(sp.productId, sp));
+
+  const ownedProducts = supplierProducts;
+  const unownedProducts = catalogProducts.filter(cat => !supplierByProductId.has(cat.id));
+
+  const filteredOwned = ownedProducts.filter(sp =>
+    sp.productName.toLowerCase().includes(search.toLowerCase())
   );
 
-  const lowStockCount = products.filter((p) => p.stock < 100).length;
+  const filteredUnowned = unownedProducts.filter(cat =>
+    cat.name.toLowerCase().includes(search.toLowerCase())
+  );
 
+  const closeAll = () => {
+    setAddModalProduct(null);
+    setDetailProduct(null);
+    setDeleteTarget(null);
+  };
+
+  // --- Add logic ---
+  const openAdd = (cat: PublicProduct) => {
+    setAddModalProduct(cat);
+    setAddForm({ price: 0, stock: 0 });
+    setAddTiers([]);
+  };
+
+  const handleAdd = async () => {
+    if (!addModalProduct) return;
+    try {
+      await supplierService.addProduct({
+        productId: addModalProduct.id,
+        price: addForm.price,
+        stock: addForm.stock,
+        tiers: addTiers.length > 0 ? addTiers : undefined,
+      });
+      closeAll();
+      loadData();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to add product');
+    }
+  };
+
+  // --- Detail logic ---
+  const openDetail = (sp: SupplierProductListItem) => {
+    setDetailProduct(sp);
+    setDetailForm({ price: sp.price, stock: sp.stock, isActive: sp.isActive });
+    setTierForm(emptyTierForm);
+    setEditingTierId(null);
+    setTierError('');
+    setTiersExpanded(false);
+    loadTiers(sp.id);
+  };
+
+  const handleSaveDetail = async () => {
+    if (!detailProduct) return;
+    try {
+      const res = await supplierService.updateProduct(detailProduct.id, {
+        price: detailForm.price,
+        stock: detailForm.stock,
+        isActive: detailForm.isActive,
+      });
+      const updated = res.data as SupplierProductListItem;
+      setDetailProduct(updated);
+      setSupplierProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to update product');
+    }
+  };
+
+  // --- Delete logic ---
+  const openDelete = (sp: SupplierProductListItem) => {
+    setDeleteTarget(sp);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await supplierService.removeProduct(deleteTarget.id);
+      closeAll();
+      loadData();
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to remove product');
+    }
+  };
+
+  // --- Tier logic (inside detail modal) ---
+  const loadTiers = useCallback(async (supplierProductId: string) => {
+    setTiersLoading(true);
+    setTierError('');
+    try {
+      const res = await supplierService.getTiers(supplierProductId);
+      setTiers(res.data);
+    } catch {
+      setTierError('Failed to load pricing tiers');
+    } finally {
+      setTiersLoading(false);
+    }
+  }, []);
+
+  const handleSaveTier = async () => {
+    if (!detailProduct) return;
+    setTierError('');
+    try {
+      if (editingTierId) {
+        await supplierService.updateTier(detailProduct.id, editingTierId, tierForm);
+      } else {
+        await supplierService.createTier(detailProduct.id, tierForm);
+      }
+      setTierForm(emptyTierForm);
+      setEditingTierId(null);
+      loadTiers(detailProduct.id);
+    } catch (err: any) {
+      setTierError(err?.response?.data?.error || 'Failed to save pricing tier');
+    }
+  };
+
+  const handleEditTier = (tier: PricingTier) => {
+    setTierForm({ minQty: tier.minQty, maxQty: tier.maxQty, unitPrice: tier.unitPrice });
+    setEditingTierId(tier.id);
+  };
+
+  const handleDeleteTier = async (tierId: string) => {
+    if (!detailProduct) return;
+    setTierError('');
+    try {
+      await supplierService.deleteTier(detailProduct.id, tierId);
+      loadTiers(detailProduct.id);
+    } catch (err: any) {
+      setTierError(err?.response?.data?.error || 'Failed to delete pricing tier');
+    }
+  };
+
+  // --- Render ---
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t('productsManagement')}</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {products.length} {t('productsListed')}
-            {lowStockCount > 0 && (
-              <span className="text-amber-600 ml-2">
-                &middot; {lowStockCount} {t('lowStockProducts').toLowerCase()}
-              </span>
-            )}
-          </p>
+      {error && (
+        <div className="mb-4 text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg flex items-center gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          {error}
+          <button onClick={() => setError('')} className="ml-auto text-red-400 hover:text-red-600">
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <button onClick={openAdd} className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors">
-          <Plus className="w-4 h-4" />
-          {t('addProduct')}
+      )}
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">{t('productsManagement')}</h1>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 bg-slate-100 rounded-xl p-1 w-fit">
+        <button
+          onClick={() => setTab('mine')}
+          className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+            tab === 'mine'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Package className="w-4 h-4" />
+          {t('yourProducts')}
+          {ownedProducts.length > 0 && (
+            <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+              tab === 'mine' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'
+            }`}>
+              {ownedProducts.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setTab('browse')}
+          className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+            tab === 'browse'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4" />
+          {t('browseCatalog')}
+          {unownedProducts.length > 0 && (
+            <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+              tab === 'browse' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'
+            }`}>
+              {unownedProducts.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -97,156 +254,453 @@ export function SupplierProducts() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('searchProducts')}
+          placeholder={tab === 'mine' ? t('searchYourProducts') : t('searchProducts')}
           className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('product')}</th>
-                <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('category')}</th>
-                <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('stock')}</th>
-                <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('price')}</th>
-                <th className="text-center px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('status')}</th>
-                <th className="text-end px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('actions')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map((product) => {
-                const unit = productUnits[product.id] || 'UNIT';
-                const isLowStock = product.stock < 100;
-                return (
-                  <tr key={product.id} className="hover:bg-slate-50 transition-colors">
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : tab === 'mine' ? (
+        /* ───── My Products Table ───── */
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('product')}</th>
+                  <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('category')}</th>
+                  <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('stock')}</th>
+                  <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('price')}</th>
+                  <th className="text-center px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('status')}</th>
+                  <th className="text-end px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('actions')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredOwned.map((sp) => {
+                  const isLowStock = sp.stock < 100;
+                  return (
+                    <tr key={sp.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-50 to-slate-100 flex items-center justify-center text-xs font-bold text-indigo-400 shrink-0">
+                            {sp.productName.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm font-medium text-slate-900">{sp.productName}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-slate-600">{sp.categoryName}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-semibold ${isLowStock ? 'text-amber-600' : 'text-slate-900'}`}>
+                            {sp.stock} {sp.unit}
+                          </span>
+                          {isLowStock && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">{sp.price} EGP</td>
+                      <td className="px-5 py-3.5 text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${
+                          sp.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {sp.isActive ? t('active') : t('inactive')}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-end">
+                        <button
+                          onClick={() => openDetail(sp)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          {t('details')}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {filteredOwned.length === 0 && (
+            <div className="px-5 py-12 text-center">
+              <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm text-slate-500">{search ? t('noProductsFound') : t('noProductsYet')}</p>
+              {!search && (
+                <button
+                  onClick={() => setTab('browse')}
+                  className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  {t('browseCatalog')}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ───── Browse Catalog Table ───── */
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('product')}</th>
+                  <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('category')}</th>
+                  <th className="text-end px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('actions')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredUnowned.map((cat) => (
+                  <tr key={cat.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-                          <img src={product.image} alt={product.name[language]} className="w-full h-full object-cover" />
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-50 to-slate-100 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
+                          {cat.name.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-sm font-medium text-slate-900">{product.name[language]}</span>
+                        <span className="text-sm font-medium text-slate-900">{cat.name}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-600">{product.category}</td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm font-semibold ${isLowStock ? 'text-amber-600' : 'text-slate-900'}`}>
-                          {product.stock} {unit}
-                        </span>
-                        {isLowStock && (
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">{product.price} EGP</td>
-                    <td className="px-5 py-3.5 text-center">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${
-                        product.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {product.status.charAt(0).toUpperCase() + product.status.slice(1)}
-                      </span>
-                    </td>
+                    <td className="px-5 py-3.5 text-sm text-slate-600">{cat.categoryName}</td>
                     <td className="px-5 py-3.5 text-end">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => openEdit(product)} className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors" title={t('editProduct')}>
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => openDelete(product)} className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors" title={t('deleteProduct')}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => openAdd(cat)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                        {t('add')}
+                      </button>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {filteredUnowned.length === 0 && (
+            <div className="px-5 py-12 text-center">
+              <ShoppingBag className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm text-slate-500">{t('noProductsInCatalog')}</p>
+            </div>
+          )}
         </div>
-        {filtered.length === 0 && (
-          <div className="px-5 py-12 text-center text-sm text-slate-500">{t('noProductsFound')}</div>
-        )}
-      </div>
+      )}
 
-      {/* Add / Edit Modal */}
-      {(modal === 'add' || modal === 'edit') && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={() => setModal('none')}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900">{modal === 'add' ? t('addProduct') : t('editProduct')}</h2>
-              <button onClick={() => setModal('none')} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400">
+      {/* ───── Add Modal ───── */}
+      {addModalProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={closeAll}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+              <h2 className="text-lg font-bold text-slate-900">{t('addToMyProducts')}</h2>
+              <button onClick={closeAll} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">{t('product')} (EN)</label>
-                  <input type="text" value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">{t('product')} (AR)</label>
-                  <input type="text" value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </div>
+            <div className="p-6 space-y-4 overflow-y-auto">
+              <div className="bg-slate-50 rounded-xl p-4">
+                <h3 className="font-semibold text-slate-900">{addModalProduct.name}</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  {addModalProduct.categoryName} &middot; {addModalProduct.unit}
+                </p>
+                {addModalProduct.description && (
+                  <p className="text-xs text-slate-500 mt-2">{addModalProduct.description}</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">{t('category')}</label>
-                  <input type="text" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">{t('price')} (EGP)</label>
-                  <input type="number" min="0" step="0.01" value={form.price || ''} onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
+                  <input type="number" min="0" step="0.01" value={addForm.price || ''}
+                    onChange={(e) => setAddForm({ ...addForm, price: parseFloat(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">{t('stock')}</label>
-                  <input type="number" min="0" value={form.stock || ''} onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) || 0 })}
+                  <input type="number" min="0" value={addForm.stock || ''}
+                    onChange={(e) => setAddForm({ ...addForm, stock: parseInt(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">{t('status')}</label>
-                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as 'active' | 'inactive' })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="active">{t('active')}</option>
-                    <option value="inactive">{t('inactive')}</option>
-                  </select>
-                </div>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Image URL</label>
-                <input type="text" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+
+              {/* Pricing Tiers (optional) */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setAddTiers(addTiers.length === 0 ? [{ minQty: 1, maxQty: null, unitPrice: addForm.price }] : [])}
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-amber-600" />
+                    <span className="text-sm font-semibold text-slate-900">{t('pricingTiers')}</span>
+                    {addTiers.length > 0 && (
+                      <span className="text-[11px] text-slate-500">({addTiers.length})</span>
+                    )}
+                  </div>
+                  {addTiers.length > 0 ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                </button>
+
+                {addTiers.length > 0 && (
+                  <div className="px-4 pb-4 space-y-2">
+                    {addTiers.map((tier, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-slate-50 rounded-lg p-3">
+                        <div className="flex-1 grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-medium text-slate-500 mb-0.5">{t('minQty')}</label>
+                            <input type="number" min="0" value={tier.minQty}
+                              onChange={(e) => {
+                                const next = [...addTiers];
+                                next[i] = { ...next[i], minQty: parseInt(e.target.value) || 0 };
+                                setAddTiers(next);
+                              }}
+                              className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-medium text-slate-500 mb-0.5">{t('maxQty')}</label>
+                            <input type="number" min="0" placeholder="∞"
+                              value={tier.maxQty ?? ''}
+                              onChange={(e) => {
+                                const next = [...addTiers];
+                                next[i] = { ...next[i], maxQty: e.target.value ? parseInt(e.target.value) : null };
+                                setAddTiers(next);
+                              }}
+                              className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-medium text-slate-500 mb-0.5">{t('unitPrice')}</label>
+                            <input type="number" min="0" step="0.01" value={tier.unitPrice || ''}
+                              onChange={(e) => {
+                                const next = [...addTiers];
+                                next[i] = { ...next[i], unitPrice: parseFloat(e.target.value) || 0 };
+                                setAddTiers(next);
+                              }}
+                              className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setAddTiers(prev => prev.filter((_, j) => j !== i))}
+                          className="p-1 rounded text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => {
+                        const last = addTiers[addTiers.length - 1];
+                        const nextMin = last.maxQty != null ? last.maxQty + 1 : last.minQty + 1;
+                        setAddTiers(prev => [...prev, { minQty: nextMin, maxQty: null, unitPrice: addForm.price }]);
+                      }}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      {t('addTier')}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100">
-              <button onClick={() => setModal('none')} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">{t('cancel')}</button>
-              <button onClick={handleSave} className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">{t('save')}</button>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 shrink-0">
+              <button onClick={closeAll} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">{t('cancel')}</button>
+              <button onClick={handleAdd} className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">{t('add')}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete Confirmation */}
-      {modal === 'delete' && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={() => setModal('none')}>
+      {/* ───── Detail Modal ───── */}
+      {detailProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={closeAll}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">{t('productDetails')}</h2>
+                <p className="text-xs text-slate-500 mt-0.5">{detailProduct.productName}</p>
+              </div>
+              <button onClick={closeAll} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="bg-slate-50 rounded-xl p-4">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{t('productInfo')}</h3>
+                <div className="flex items-start gap-3">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-50 to-slate-100 flex items-center justify-center text-lg font-bold text-indigo-400 shrink-0">
+                    {detailProduct.productName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900">{detailProduct.productName}</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {detailProduct.categoryName} &middot; {detailProduct.unit}
+                    </p>
+                    {detailProduct.description && (
+                      <p className="text-xs text-slate-500 mt-1">{detailProduct.description}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="border border-slate-200 rounded-xl p-4">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('yourPricing')}</h3>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t('price')} (EGP)</label>
+                    <input type="number" min="0" step="0.01" value={detailForm.price || ''}
+                      onChange={(e) => setDetailForm({ ...detailForm, price: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t('stock')}</label>
+                    <input type="number" min="0" value={detailForm.stock || ''}
+                      onChange={(e) => setDetailForm({ ...detailForm, stock: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t('status')}</label>
+                    <select value={detailForm.isActive ? 'active' : 'inactive'}
+                      onChange={(e) => setDetailForm({ ...detailForm, isActive: e.target.value === 'active' })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                      <option value="active">{t('active')}</option>
+                      <option value="inactive">{t('inactive')}</option>
+                    </select>
+                  </div>
+                </div>
+                <button onClick={handleSaveDetail}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+                  <Save className="w-4 h-4" />
+                  {t('saveChanges')}
+                </button>
+              </div>
+
+              {/* Pricing Tiers */}
+              <div className="border border-slate-200 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setTiersExpanded(!tiersExpanded)}
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-amber-600" />
+                    <span className="text-sm font-semibold text-slate-900">{t('pricingTiers')}</span>
+                    {tiers.length > 0 && (
+                      <span className="text-[11px] text-slate-500">({tiers.length})</span>
+                    )}
+                  </div>
+                  {tiersExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                </button>
+
+                {tiersExpanded && (
+                  <div className="px-4 pb-4 space-y-3">
+                    {tierError && (
+                      <div className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{tierError}</div>
+                    )}
+
+                    {tiersLoading ? (
+                      <div className="flex items-center justify-center py-6">
+                        <div className="w-5 h-5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : tiers.length === 0 && !editingTierId ? (
+                      <div className="text-center py-6">
+                        <Layers className="w-8 h-8 text-slate-300 mx-auto mb-1" />
+                        <p className="text-xs text-slate-500">{t('noTiersDefined')}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {tiers.map((tier) => (
+                          <div key={tier.id} className="flex items-center gap-3 bg-slate-50 rounded-lg p-3">
+                            <div className="flex-1 grid grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="text-[11px] text-slate-500 block">{t('minQty')}</span>
+                                <span className="font-semibold text-slate-900">{tier.minQty}</span>
+                              </div>
+                              <div>
+                                <span className="text-[11px] text-slate-500 block">{t('maxQty')}</span>
+                                <span className="font-semibold text-slate-900">{tier.maxQty ?? '∞'}</span>
+                              </div>
+                              <div>
+                                <span className="text-[11px] text-slate-500 block">{t('unitPrice')}</span>
+                                <span className="font-semibold text-slate-900">{tier.unitPrice} EGP</span>
+                              </div>
+                            </div>
+                            <button onClick={() => handleEditTier(tier)} className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-100 transition-colors">
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => handleDeleteTier(tier.id)} className="p-1.5 rounded-lg text-red-500 hover:bg-red-100 transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="border border-slate-200 rounded-lg p-4">
+                      <h4 className="text-xs font-semibold text-slate-600 mb-3">
+                        {editingTierId ? t('editTier') : t('addTier')}
+                      </h4>
+                      <div className="grid grid-cols-3 gap-3 mb-3">
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-600 mb-1">{t('minQty')}</label>
+                          <input type="number" min="0" value={tierForm.minQty}
+                            onChange={(e) => setTierForm({ ...tierForm, minQty: parseInt(e.target.value) || 0 })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-600 mb-1">{t('maxQty')}</label>
+                          <input type="number" min="0" placeholder="∞"
+                            value={tierForm.maxQty ?? ''}
+                            onChange={(e) => setTierForm({ ...tierForm, maxQty: e.target.value ? parseInt(e.target.value) : null })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-600 mb-1">{t('unitPrice')} (EGP)</label>
+                          <input type="number" min="0" step="0.01" value={tierForm.unitPrice || ''}
+                            onChange={(e) => setTierForm({ ...tierForm, unitPrice: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        {editingTierId && (
+                          <button onClick={() => { setTierForm(emptyTierForm); setEditingTierId(null); }}
+                            className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
+                            {t('cancel')}
+                          </button>
+                        )}
+                        <button onClick={handleSaveTier}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors">
+                          <Save className="w-3 h-3" />
+                          {editingTierId ? t('update') : t('add')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="border border-red-200 rounded-xl p-4">
+            
+                <button onClick={() => openDelete(detailProduct)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                  <Trash2 className="w-4 h-4" />
+                  {t('removeFromCatalog')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ───── Delete Confirmation ───── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={closeAll}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 text-center">
               <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 flex items-center justify-center">
                 <Trash2 className="w-6 h-6 text-red-500" />
               </div>
-              <h2 className="text-lg font-bold text-slate-900 mb-1">{t('deleteProduct')}</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-1">{t('removeFromCatalog')}</h2>
               <p className="text-sm text-slate-500 mb-6">
-                {t('deleteConfirm')} &quot;{selectedProduct.name[language]}&quot;?
+                {t('deleteConfirm')} &quot;{deleteTarget.productName}&quot;?
               </p>
               <div className="flex gap-2 justify-center">
-                <button onClick={() => setModal('none')} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">{t('cancel')}</button>
+                <button onClick={closeAll} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">{t('cancel')}</button>
                 <button onClick={handleDelete} className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">{t('delete')}</button>
               </div>
             </div>

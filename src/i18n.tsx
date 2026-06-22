@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 
 export type Language = 'en' | 'ar';
 
@@ -88,10 +88,27 @@ export const translations = {
   addCategory: { en: 'Add Category', ar: 'إضافة تصنيف' },
   active: { en: 'Active', ar: 'نشط' },
   inactive: { en: 'Inactive', ar: 'غير نشط' },
+  activate: { en: 'Activate', ar: 'تفعيل' },
+  deactivate: { en: 'Deactivate', ar: 'إلغاء التفعيل' },
   regions: { en: 'Regions', ar: 'المناطق' },
   regionsConfigured: { en: 'regions configured', ar: 'منطقة تم تكوينها' },
   searchRegions: { en: 'Search regions...', ar: 'ابحث عن مناطق...' },
   addRegion: { en: 'Add Region', ar: 'إضافة منطقة' },
+  editRegion: { en: 'Edit Region', ar: 'تعديل المنطقة' },
+  nameAr: { en: 'Name (Arabic)', ar: 'الاسم (عربي)' },
+  nameEn: { en: 'Name (English)', ar: 'الاسم (إنجليزي)' },
+  parentRegion: { en: 'Parent Region', ar: 'المنطقة الأم' },
+  noParent: { en: 'No parent (root)', ar: 'بدون أم (جذر)' },
+  deleteRegion: { en: 'Delete Region', ar: 'حذف المنطقة' },
+  deleteRegionConfirm: { en: 'Are you sure you want to delete', ar: 'هل أنت متأكد من حذف' },
+  deleteRegionCascade: { en: 'All subregions will also be deleted.', ar: 'سيتم حذف جميع المناطق الفرعية أيضًا.' },
+  addSubregion: { en: 'Add Subregion', ar: 'إضافة منطقة فرعية' },
+  noRegions: { en: 'No regions yet', ar: 'لا توجد مناطق بعد' },
+  linkToOsm: { en: 'Link to OSM boundary (optional)', ar: 'ربط بحدود OSM (اختياري)' },
+  searchLocation: { en: 'Search for a location...', ar: 'ابحث عن موقع...' },
+  linkedToOsm: { en: 'Linked to', ar: 'مرتبط بـ' },
+  clearOsm: { en: 'Clear OSM link', ar: 'إزالة رابط OSM' },
+  osmSearchNoResults: { en: 'No locations found', ar: 'لم يتم العثور على مواقع' },
   reports: { en: 'Reports', ar: 'التقارير' },
   analytics: { en: 'Analytics and performance data', ar: 'التحليلات وبيانات الأداء' },
   generateReport: { en: 'Generate Report', ar: 'إنشاء تقرير' },
@@ -298,8 +315,10 @@ export const translations = {
   totalDeliveries: { en: 'Total Deliveries', ar: 'إجمالي التوصيلات' },
   cancel: { en: 'Cancel', ar: 'إلغاء' },
   save: { en: 'Save', ar: 'حفظ' },
+  edit: { en: 'Edit', ar: 'تعديل' },
   delete: { en: 'Delete', ar: 'حذف' },
   deleteConfirm: { en: 'Are you sure you want to delete', ar: 'هل أنت متأكد من حذف' },
+  noResults: { en: 'No results found', ar: 'لا توجد نتائج' },
   systemAlerts: { en: 'System Alerts', ar: 'تنبيهات النظام' },
   topRegions: { en: 'Top Regions', ar: 'أفضل المناطق' },
   topCategories: { en: 'Top Categories', ar: 'أفضل التصنيفات' },
@@ -330,6 +349,88 @@ export const translations = {
   growing: { en: 'Growing', ar: 'متنامي' },
   stable: { en: 'Stable', ar: 'مستقر' },
   declining: { en: 'Declining', ar: 'متراجع' },
+  pricingTiers: { en: 'Pricing Tiers', ar: 'شرائح التسعير' },
+  basePrice: { en: 'Base Price', ar: 'السعر الأساسي' },
+  noTiersDefined: { en: 'No pricing tiers defined', ar: 'لا توجد شرائح تسعير محددة' },
+  minQty: { en: 'Min Qty', ar: 'الحد الأدنى' },
+  maxQty: { en: 'Max Qty', ar: 'الحد الأقصى' },
+  unitPrice: { en: 'Unit Price', ar: 'سعر الوحدة' },
+  editTier: { en: 'Edit Pricing Tier', ar: 'تعديل شريحة التسعير' },
+  addTier: { en: 'Add Pricing Tier', ar: 'إضافة شريحة تسعير' },
+  update: { en: 'Update', ar: 'تحديث' },
+  name: { en: 'Name', ar: 'الاسم' },
+  businessType: { en: 'Business Type', ar: 'نوع النشاط' },
+  address: { en: 'Address', ar: 'العنوان' },
+  taxId: { en: 'Tax ID', ar: 'الرقم الضريبي' },
+  profileUpdated: { en: 'Profile updated successfully', ar: 'تم تحديث الملف الشخصي بنجاح' },
+  personalInfo: { en: 'Personal Information', ar: 'المعلومات الشخصية' },
+  businessInfo: { en: 'Business Information', ar: 'معلومات النشاط التجاري' },
+  location: { en: 'Location', ar: 'الموقع' },
+  productDetails: { en: 'Product Details', ar: 'تفاصيل المنتج' },
+  productInfo: { en: 'Product Information', ar: 'معلومات المنتج' },
+  yourPricing: { en: 'Your Pricing', ar: 'التسعير الخاص بك' },
+
+  removeFromCatalog: { en: 'Remove from my catalog', ar: 'إزالة من كتالوجي' },
+  addToMyProducts: { en: 'Add to my products', ar: 'أضف إلى منتجاتي' },
+  notInCatalog: { en: 'Not in your catalog', ar: 'غير موجود في كتالوجك' },
+  inYourCatalog: { en: 'In your catalog', ar: 'في كتالوجك' },
+  saveChanges: { en: 'Save Changes', ar: 'حفظ التغييرات' },
+  totalInCatalog: { en: 'Total in catalog', ar: 'الإجمالي في الكتالوج' },
+  fromYou: { en: 'from you', ar: 'من عندك' },
+  yourProducts: { en: 'My Products', ar: 'منتجاتي' },
+  browseCatalog: { en: 'Browse Catalog', ar: 'تصفح المنتجات' },
+  searchYourProducts: { en: 'Search your products...', ar: 'ابحث في منتجاتك...' },
+  noProductsYet: { en: 'You haven\'t added any products yet', ar: 'لم تقم بإضافة أي منتجات بعد' },
+  noProductsInCatalog: { en: 'All products are in your catalog', ar: 'جميع المنتجات موجودة في كتالوجك' },
+  backToProducts: { en: 'Back to Products', ar: 'العودة إلى المنتجات' },
+  companyName: { en: 'Company Name', ar: 'اسم الشركة' },
+  backToDashboard: { en: 'Back to Dashboard', ar: 'العودة إلى لوحة التحكم' },
+  lastLogin: { en: 'Last Login', ar: 'آخر تسجيل دخول' },
+  emailVerified: { en: 'Email Verified', ar: 'البريد الإلكتروني موثق' },
+  phoneVerified: { en: 'Phone Verified', ar: 'الهاتف موثق' },
+  rating: { en: 'Rating', ar: 'التقييم' },
+  suspendBuyerConfirm: { en: 'Are you sure you want to suspend', ar: 'هل أنت متأكد من إيقاف' },
+  reactivateBuyerConfirm: { en: 'Are you sure you want to reactivate', ar: 'هل أنت متأكد من إعادة تفعيل' },
+  confirmSuspend: { en: 'Yes, Suspend', ar: 'نعم، إيقاف' },
+  confirmReactivate: { en: 'Yes, Reactivate', ar: 'نعم، إعادة تفعيل' },
+  reasonOptional: { en: 'Reason (optional)', ar: 'السبب (اختياري)' },
+  reasonPlaceholder: { en: 'Enter reason for suspension...', ar: 'أدخل سبب الإيقاف...' },
+  cancelledOrders: { en: 'Cancelled Orders', ar: 'الطلبات الملغية' },
+  suspendAction: { en: 'Suspend', ar: 'إيقاف' },
+  reactivateAction: { en: 'Reactivate', ar: 'إعادة تفعيل' },
+  approveSupplierConfirm: { en: 'Are you sure you want to approve', ar: 'هل أنت متأكد من الموافقة على' },
+  rejectSupplierConfirm: { en: 'Are you sure you want to reject', ar: 'هل أنت متأكد من رفض' },
+  confirmApprove: { en: 'Yes, Approve', ar: 'نعم، موافقة' },
+  confirmReject: { en: 'Yes, Reject', ar: 'نعم، رفض' },
+  rejectReason: { en: 'Reason for rejection', ar: 'سبب الرفض' },
+  rejectReasonPlaceholder: { en: 'Enter reason for rejection...', ar: 'أدخل سبب الرفض...' },
+  orderHistory: { en: 'Order History', ar: 'سجل الطلبات' },
+  accountUnderReview: { en: 'Account Under Review', ar: 'الحساب قيد المراجعة' },
+  accountRejected: { en: 'Account Rejected', ar: 'تم رفض الحساب' },
+  accountSuspended: { en: 'Account Suspended', ar: 'الحساب موقوف' },
+  pendingApprovalMessage: { en: 'Your registration is under review. You will be notified once your account is approved by an administrator.', ar: 'طلب التسجيل قيد المراجعة. سيتم إعلامك بمجرد الموافقة على حسابك من قبل المسؤول.' },
+  rejectedMessage: { en: 'Your registration request has been rejected. Please contact support for more information.', ar: 'تم رفض طلب التسجيل الخاص بك. يرجى الاتصال بالدعم لمزيد من المعلومات.' },
+  suspendedMessage: { en: 'Your account has been suspended. Please contact support for more information.', ar: 'تم إيقاف حسابك. يرجى الاتصال بالدعم لمزيد من المعلومات.' },
+  goHome: { en: 'Go to Home', ar: 'العودة للرئيسية' },
+
+  // Admin Regions
+  adminTitle: { en: 'Region Administration', ar: 'إدارة المناطق' },
+  adminSubtitle: { en: 'Manage Egypt\'s geographic hierarchy', ar: 'إدارة التسلسل الهرمي الجغرافي لمصر' },
+  quickStats: { en: 'Quick Stats', ar: 'إحصائيات سريعة' },
+  totalRegions: { en: 'Total', ar: 'المجموع' },
+  governorates: { en: 'Governorates', ar: 'المحافظات' },
+  cities: { en: 'Cities', ar: 'المدن' },
+  villages: { en: 'Villages', ar: 'القرى' },
+  govNote: { en: 'All 27 governorates across Egypt', ar: 'جميع محافظات مصر البالغ عددها 27 محافظة' },
+  noSubRegions: { en: 'No sub-regions found', ar: 'لا توجد مناطق فرعية' },
+  noCities: { en: 'No cities or villages in this governorate', ar: 'لا توجد مدن أو قرى في هذه المحافظة' },
+  addGovernorate: { en: 'Add Governorate', ar: 'إضافة محافظة' },
+  all: { en: 'All', ar: 'الكل' },
+  activeOnly: { en: 'Active', ar: 'نشط' },
+  inactiveOnly: { en: 'Inactive', ar: 'غير نشط' },
+  expandAll: { en: 'Expand All', ar: 'توسيع الكل' },
+  collapseAll: { en: 'Collapse All', ar: 'طي الكل' },
+  type: { en: 'Type', ar: 'النوع' },
 };
 
 interface LanguageContextType {
@@ -341,16 +442,23 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguageState] = useState<Language>(() => {
+    return (localStorage.getItem('preferredLang') as Language) || 'en';
+  });
+
+  const setLanguage = useCallback((lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('preferredLang', lang);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
   }, [language]);
 
-  const t = (key: keyof typeof translations) => {
+  const t = useCallback((key: keyof typeof translations) => {
     return translations[key]?.[language] ?? key;
-  };
+  }, [language]);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>

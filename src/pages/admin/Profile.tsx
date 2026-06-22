@@ -1,41 +1,37 @@
 import { useEffect, useState } from 'react';
 import {
-  User, Mail, Phone, Building2, MapPin, Calendar, Shield,
-  AlertTriangle, Edit3, Save, X, Briefcase,
-  BadgePercent, CheckCircle, ArrowLeft, Star
+  User, Mail, Phone, Calendar, Shield,
+  AlertTriangle, Edit3, Save, X, CheckCircle, ArrowLeft,
+  Globe, Clock
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n';
-import { supplierService, type SupplierProfile } from '../../services/supplier.service';
-import { RegionCascader } from '../../components/RegionCascader';
+import { adminService, type AdminProfile } from '../../services/admin.service';
 import { useNavigate } from 'react-router-dom';
 
-export function SupplierProfile() {
+export function AdminProfile() {
   const { user } = useAuth();
   const { language, t } = useLanguage();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<SupplierProfile | null>(null);
+  const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+
   const [form, setForm] = useState({
-    fullName: '', phone: '', companyName: '',
-    address: '', regionId: '',
+    fullName: '', phone: '',
   });
 
   useEffect(() => {
-    supplierService.getProfile()
-      .then((profileRes) => {
-        const p = profileRes.data;
+    adminService.getProfile()
+      .then((res) => {
+        const p = res.data;
         setProfile(p);
         setForm({
-          fullName: p.name,
+          fullName: p.fullName,
           phone: p.phone,
-          companyName: p.companyName,
-          address: p.address || '',
-          regionId: p.regionId,
         });
       })
       .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load profile'))
@@ -46,16 +42,13 @@ export function SupplierProfile() {
     setSaving(true);
     setSuccessMsg('');
     try {
-      await supplierService.updateProfile({
+      await adminService.updateProfile({
         fullName: form.fullName || undefined,
         phone: form.phone || undefined,
-        businessName: form.companyName || undefined,
-        address: form.address || undefined,
-        regionId: form.regionId || undefined,
       });
       setSuccessMsg(t('profileUpdated'));
       setEditing(false);
-      const refresh = await supplierService.getProfile();
+      const refresh = await adminService.getProfile();
       setProfile(refresh.data);
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err: any) {
@@ -68,11 +61,8 @@ export function SupplierProfile() {
   const handleCancel = () => {
     if (!profile) return;
     setForm({
-      fullName: profile.name,
+      fullName: profile.fullName,
       phone: profile.phone,
-      companyName: profile.companyName,
-      address: profile.address || '',
-      regionId: profile.regionId,
     });
     setEditing(false);
     setError('');
@@ -97,21 +87,18 @@ export function SupplierProfile() {
     );
   }
 
-  const regionName = regions.find((r) => r.id === form.regionId)
-    ?.[language === 'en' ? 'nameEn' : 'nameAr'] || profile?.regionName || '';
-
-  const initials = (profile?.name || user?.name || '').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  const initials = (profile?.fullName || user?.name || '').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         <div className="flex items-center justify-between mb-6">
           <button
-            onClick={() => navigate('/supplier/products')}
+            onClick={() => navigate('/admin')}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            {t('backToProducts')}
+            {t('backToDashboard')}
           </button>
 
           {!editing ? (
@@ -168,7 +155,7 @@ export function SupplierProfile() {
                 <span className="text-2xl sm:text-3xl font-bold text-indigo-600">{initials}</span>
               </div>
               <div className="sm:pb-1.5">
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{profile?.name || user?.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{profile?.fullName || user?.name}</h1>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                   <span className="text-sm text-slate-500">{profile?.email || user?.email}</span>
                   <span className="w-1 h-1 rounded-full bg-slate-300 hidden sm:block" />
@@ -176,12 +163,6 @@ export function SupplierProfile() {
                     <Shield className="w-3 h-3" />
                     {user?.role || '-'}
                   </span>
-                  {profile?.ratingAvg ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100">
-                      <Star className="w-3 h-3 text-amber-500" />
-                      {profile.ratingAvg.toFixed(1)}
-                    </span>
-                  ) : null}
                 </div>
               </div>
             </div>
@@ -195,48 +176,19 @@ export function SupplierProfile() {
                     <Field label="Email" value={profile?.email || ''} disabled />
                   </div>
                 </Section>
-
-                <Section title={t('businessInfo')} icon={Briefcase}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <Field label={t('companyName')} value={form.companyName} onChange={(v) => setForm((f) => ({ ...f, companyName: v }))} />
-                    <Field label={t('taxId')} value={profile?.taxId || ''} disabled />
-                  </div>
-                </Section>
-
-                <Section title={t('location')} icon={MapPin}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('region')}</label>
-                      <RegionCascader
-                        value={form.regionId}
-                        onChange={(id) => setForm((f) => ({ ...f, regionId: id }))}
-                      />
-                    </div>
-                    <Field label={t('address')} value={form.address} onChange={(v) => setForm((f) => ({ ...f, address: v }))} />
-                  </div>
-                </Section>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <InfoCard title={t('personalInfo')} icon={User}>
                   <InfoRow icon={Mail} label="Email" value={profile?.email} />
                   <InfoRow icon={Phone} label={t('phone')} value={profile?.phone} />
-                  <InfoRow icon={Calendar} label={t('memberSince')} value={profile?.joinedDate ? new Date(profile.joinedDate).toLocaleDateString() : '-'} />
-                </InfoCard>
-
-                <InfoCard title={t('businessInfo')} icon={Briefcase}>
-                  <InfoRow icon={Building2} label={t('companyName')} value={profile?.companyName} />
-                  <InfoRow icon={BadgePercent} label={t('taxId')} value={profile?.taxId} />
-                </InfoCard>
-
-                <InfoCard title={t('location')} icon={MapPin}>
-                  <InfoRow icon={MapPin} label={t('region')} value={regionName} />
-                  <InfoRow icon={MapPin} label={t('address')} value={profile?.address} />
+                  <InfoRow icon={Calendar} label={t('memberSince')} value={profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-'} />
                 </InfoCard>
 
                 <InfoCard title={t('accountSettings')} icon={Shield}>
-                  <InfoRow icon={Shield} label={t('role')} value={user?.role || '-'} />
-                  <InfoRow icon={Calendar} label={t('memberSince')} value={profile?.joinedDate ? new Date(profile.joinedDate).toLocaleDateString() : '-'} />
+                  <InfoRow icon={Shield} label={t('role')} value={profile?.role || '-'} />
+                  <InfoRow icon={Globe} label={t('language')} value={(profile?.preferredLang || 'en').toUpperCase()} />
+                  <InfoRow icon={Clock} label={t('lastLogin')} value={profile?.lastLoginAt ? new Date(profile.lastLoginAt).toLocaleDateString() : '-'} />
                 </InfoCard>
               </div>
             )}
