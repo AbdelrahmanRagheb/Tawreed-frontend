@@ -81,14 +81,20 @@ export function AdminLayout() {
                </div>
                <span className="text-lg font-bold tracking-tight text-slate-800 uppercase">{t('appTitle')}</span>
             </div>
-             <div className="flex items-center gap-2">
-                <NavLink
-                  to="/admin/profile"
-                  className="text-slate-500 hover:text-indigo-600 transition-colors"
-                >
-                  <User className="w-5 h-5" />
-                </NavLink>
-                <button
+              <div className="flex items-center gap-2">
+                 <NavLink
+                   to="/admin/profile"
+                   className="text-slate-500 hover:text-indigo-600 transition-colors"
+                 >
+                   <User className="w-5 h-5" />
+                 </NavLink>
+                 <NavLink
+                   to="/admin/settings"
+                   className="text-slate-500 hover:text-indigo-600 transition-colors"
+                 >
+                   <Settings className="w-5 h-5" />
+                 </NavLink>
+                 <button
                   onClick={() => {
                     const newLang = language === 'en' ? 'ar' : 'en';
                     setLanguage(newLang);
@@ -107,7 +113,7 @@ export function AdminLayout() {
       </main>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-16 w-full z-50">
-        {navItems.map((item) => (
+        {navItems.filter((item) => !['profile', 'settings'].includes(item.key)).map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

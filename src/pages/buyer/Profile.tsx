@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n';
 import { buyerService, type BuyerProfile } from '../../services/buyer.service';
+import { publicService, type PublicRegion } from '../../services/public.service';
 import { RegionCascader } from '../../components/RegionCascader';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,12 +21,14 @@ export function BuyerProfile() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [regions, setRegions] = useState<PublicRegion[]>([]);
   const [form, setForm] = useState({
     fullName: '', phone: '', businessName: '', businessType: '',
     address: '', regionId: '',
   });
 
   useEffect(() => {
+    publicService.listRegions().then((r) => setRegions(r.data)).catch(() => {});
     buyerService.getProfile()
       .then((profileRes) => {
         const p = profileRes.data;

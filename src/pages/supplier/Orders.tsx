@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Package, Clock, CheckCircle, XCircle, Truck, AlertCircle } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, Truck, AlertCircle, Calendar } from 'lucide-react';
 import { useLanguage } from '../../i18n';
 import { supplierService, type SupplierOrderListItem } from '../../services/supplier.service';
 
 const statusConfig: Record<string, { icon: typeof Package; color: string; bg: string }> = {
-  PendingApproval: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100' },
   Open: { icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-100' },
-  Locked: { icon: Truck, color: 'text-blue-600', bg: 'bg-blue-100' },
+  Closed: { icon: Clock, color: 'text-slate-600', bg: 'bg-slate-200' },
   Completed: { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-100' },
   Cancelled: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100' },
-  Declined: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100' },
 };
 
 export function SupplierOrders() {
@@ -57,11 +55,10 @@ export function SupplierOrders() {
           className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="">{t('filter')}: All</option>
-          <option value="PendingApproval">Pending Approval</option>
-          <option value="Open">Open</option>
-          <option value="Locked">Locked</option>
-          <option value="Completed">Completed</option>
-          <option value="Cancelled">Cancelled</option>
+          <option value="Open">{t('activeOrders')}</option>
+          <option value="Closed">{t('closed')}</option>
+          <option value="Completed">{t('completedOrders')}</option>
+          <option value="Cancelled">{t('cancelledOrders')}</option>
         </select>
       </div>
 
@@ -104,6 +101,9 @@ export function SupplierOrders() {
                   {t('buyer')}: {order.creatorName} • {order.buyerCompany}
                 </p>
                 <p className="text-[11px] text-slate-500 mt-0.5">{t('region')}: {order.region}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  <Calendar className="w-3 h-3 inline mr-1" />{t('deadline')}: {new Date(order.deadline).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                </p>
               </div>
 
               <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between">

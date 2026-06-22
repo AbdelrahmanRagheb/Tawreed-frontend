@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Search, Plus, Minus, X, ShoppingCart, Package, MapPin,
   Calendar, Clock, Users, Eye, TrendingDown, CheckCircle,
@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
 import { publicService, type PublicProduct, type PublicCategory } from '../../services/public.service';
-import { buyerService, type CreateOrderRequest } from '../../services/buyer.service';
+import { buyerService, type CreateOrderRequest, type BuyerOrderListItem } from '../../services/buyer.service';
 import type { SavedOrderDraft } from '../../types';
 
 interface CartItem {
@@ -34,6 +34,8 @@ interface SelectedProduct {
 export function CreateOrder() {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
+  const resumeDraft = (location.state as { resumeDraft?: BuyerOrderListItem })?.resumeDraft;
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('');
@@ -69,6 +71,32 @@ export function CreateOrder() {
         setCategories(catRes.data);
         setBuyerRegionName(profileRes.data.regionName);
         setBuyerRegionId(profileRes.data.regionId);
+
+        if (resumeDraft) {
+          buyerService.getOrderDetail(resumeDraft.id).then((detailRes) => {
+            const detail = detailRes.data;
+            setOrderName(detail.title);
+            setOrderDescription(detail.description || '');
+            if (detail.deadline) {
+              const d = new Date(detail.deadline);
+              setDeadlineDate(d.toISOString().split('T')[0]);
+              setDeadlineTime(d.toTimeString().slice(0, 5));
+            }
+            const items: CartItem[] = detail.products.map((p) => {
+              const product = prodRes.data.find((x) => x.id === p.productId);
+              return {
+                productId: p.productId,
+                name: p.productName,
+                category: product?.categoryName || '',
+                quantity: p.targetQuantity,
+                price: p.unitPrice || 0,
+                unit: p.unit,
+                stock: product?.stock || 0,
+              };
+            });
+            setCart(items);
+          }).catch(() => {});
+        }
       })
       .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load data'))
       .finally(() => setLoading(false));
@@ -491,7 +519,7 @@ export function CreateOrder() {
               <div className="space-y-2">
                 {[
                   { label: t('orderName'), valid: !!orderName.trim() },
-                  { label: t('region'), valid: !!region },
+                  { label: t('region'), valid: !!buyerRegionName },
                   { label: t('deadline'), valid: !!deadlineDate },
                   { label: t('productsAdded'), valid: cart.length > 0 },
                   { label: t('quantitiesValid'), valid: cart.every((item) => item.quantity > 0) },

@@ -23,6 +23,7 @@ import {
   Layers,
   Maximize2,
   Minimize2,
+  Shield,
 } from "lucide-react";
 import { useLanguage } from "../../i18n";
 import {
@@ -44,16 +45,49 @@ const emptyForm: RegionForm = {
   type: "Governorate",
 };
 
+const CENTER_TYPES = ["Qism", "Markaz", "Madina", "Hayy", "PoliceDepartment", "Region"];
+const LOCALITY_TYPES = ["City", "Village", "Kafr", "Ezba", "Shiyakha", "Manshaat", "Zone", "CustomsZone", "QismSection"];
+
+function isCenter(type: string) { return CENTER_TYPES.includes(type); }
+function isLocality(type: string) { return LOCALITY_TYPES.includes(type); }
+function hasChildren(type: string) { return type === "Governorate" || isCenter(type); }
+
 const TYPE_COLORS: Record<string, string> = {
   Governorate: "bg-blue-100 text-blue-700 border-blue-200",
+  Qism: "bg-green-100 text-green-700 border-green-200",
+  Markaz: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  Madina: "bg-teal-100 text-teal-700 border-teal-200",
+  Hayy: "bg-cyan-100 text-cyan-700 border-cyan-200",
+  PoliceDepartment: "bg-purple-100 text-purple-700 border-purple-200",
+  Region: "bg-slate-100 text-slate-700 border-slate-200",
   City: "bg-green-100 text-green-700 border-green-200",
   Village: "bg-amber-100 text-amber-700 border-amber-200",
+  Kafr: "bg-orange-100 text-orange-700 border-orange-200",
+  Ezba: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  Shiyakha: "bg-lime-100 text-lime-700 border-lime-200",
+  Manshaat: "bg-stone-100 text-stone-700 border-stone-200",
+  Zone: "bg-violet-100 text-violet-700 border-violet-200",
+  CustomsZone: "bg-rose-100 text-rose-700 border-rose-200",
+  QismSection: "bg-indigo-100 text-indigo-700 border-indigo-200",
 };
 
 const TYPE_LABELS: Record<string, [string, string]> = {
   Governorate: ["محافظة", "Governorate"],
+  Qism: ["قسم", "Qism"],
+  Markaz: ["مركز", "Markaz"],
+  Madina: ["مدينة جديدة", "New City"],
+  Hayy: ["حي", "District"],
+  PoliceDepartment: ["إدارة شرطة", "Police Dept"],
+  Region: ["منطقة", "Region"],
   City: ["مدينة", "City"],
   Village: ["قرية", "Village"],
+  Kafr: ["كفر", "Kafr"],
+  Ezba: ["عزبة", "Ezba"],
+  Shiyakha: ["شياخة", "Shiyakha"],
+  Manshaat: ["منشأة", "Manshaat"],
+  Zone: ["نطاق", "Zone"],
+  CustomsZone: ["دائرة جمركية", "Customs Zone"],
+  QismSection: ["قسم أول/ثان", "Qism Section"],
 };
 
 function TypeBadge({ type, lang }: { type: string; lang: string }) {
@@ -63,8 +97,11 @@ function TypeBadge({ type, lang }: { type: string; lang: string }) {
       className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md border ${TYPE_COLORS[type] ?? "bg-slate-100 text-slate-600 border-slate-200"}`}
     >
       {type === "Governorate" && <Globe2 className="w-3 h-3" />}
-      {type === "City" && <Building2 className="w-3 h-3" />}
-      {type === "Village" && <Home className="w-3 h-3" />}
+      {(isCenter(type) || type === "City") && <Building2 className="w-3 h-3" />}
+      {(type === "Village" || type === "Kafr" || type === "Ezba" || type === "Manshaat") && <Home className="w-3 h-3" />}
+      {(type === "Shiyakha" || type === "QismSection") && <Layers className="w-3 h-3" />}
+      {(type === "Zone") && <MapPin className="w-3 h-3" />}
+      {(type === "CustomsZone" || type === "PoliceDepartment") && <Shield className="w-3 h-3" />}
       {lang === "ar" ? labels[0] : labels[1]}
     </span>
   );
@@ -101,6 +138,12 @@ export function AdminRegions() {
 
   // New states for reshaped user experience
   const [typeFilter, setTypeFilter] = useState<string>("all"); // 'all', 'Governorate', 'City', 'Village', 'active', 'inactive'
+
+  const matchesType = useCallback((t: string) =>
+    t === typeFilter ||
+    (typeFilter === "City" && isCenter(t)) ||
+    (typeFilter === "Village" && isLocality(t)),
+  [typeFilter]);
   const [stats, setStats] = useState({ gov: 0, cities: 0, villages: 0 });
 
   const [showAddModal, setShowAddModal] = useState(false);
@@ -226,7 +269,7 @@ export function AdminRegions() {
     if (!parentNode) {
       setForm({ ...emptyForm, parentId: null, type: "Governorate" });
     } else {
-      const childType = parentNode.type === "Governorate" ? "City" : "Village";
+      const childType = parentNode.type === "Governorate" ? "Qism" : "Village";
       setForm({ ...emptyForm, parentId: parentNode.id, type: childType });
     }
     setEditTarget(null);
@@ -324,10 +367,14 @@ export function AdminRegions() {
     // If filtering by specific type like City or Village, we still show the governorate if it contains that type
     return roots.filter((r) => {
       if (r.type === typeFilter) return true;
+      const matchesType = (t: string) =>
+        t === typeFilter ||
+        (typeFilter === "City" && isCenter(t)) ||
+        (typeFilter === "Village" && isLocality(t));
       const hasMatchingChild = r.children.some(
         (c) =>
-          c.type === typeFilter ||
-          c.children.some((v) => v.type === typeFilter),
+          matchesType(c.type) ||
+          c.children.some((v) => matchesType(v.type)),
       );
       return hasMatchingChild;
     });
@@ -339,7 +386,7 @@ export function AdminRegions() {
     _parentNode: RegionTreeNode | null,
   ) => {
     const nodeChildren = loaded[node.id] ? node.children : [];
-    const hasChildren = node.type !== "Village";
+    const nodeHasChildren = hasChildren(node.type);
     const isExpanded = expanded.has(node.id);
     const isLoading = loadingChildren[node.id];
     const label = language === "ar" ? node.nameAr : node.nameEn;
@@ -350,8 +397,8 @@ export function AdminRegions() {
       if (typeFilter === "all") return true;
       if (typeFilter === "active") return child.isActive;
       if (typeFilter === "inactive") return !child.isActive;
-      if (typeFilter === child.type) return true;
-      if (child.children.some((v) => v.type === typeFilter)) return true;
+      if (matchesType(child.type)) return true;
+      if (child.children.some((v) => matchesType(v.type))) return true;
       return false;
     });
 
@@ -381,9 +428,9 @@ export function AdminRegions() {
           }}
         >
           <button
-            onClick={() => hasChildren && toggleExpand(node.id)}
+            onClick={() => nodeHasChildren && toggleExpand(node.id)}
             className={`w-6 h-6 flex items-center justify-center rounded-lg transition-colors ${
-              hasChildren
+              nodeHasChildren
                 ? "cursor-pointer text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"
                 : "text-transparent cursor-default"
             }`}
@@ -391,7 +438,7 @@ export function AdminRegions() {
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
             ) : (
-              hasChildren &&
+              nodeHasChildren &&
               (isExpanded ? (
                 <ChevronDown className="w-4 h-4 text-slate-600" />
               ) : language === "ar" ? (
@@ -404,12 +451,16 @@ export function AdminRegions() {
 
           <div
             className={`p-2 rounded-lg ${
-              node.type === "City"
-                ? "bg-green-50 text-green-600"
-                : "bg-amber-50 text-amber-600"
+              node.type === "Governorate"
+                ? "bg-blue-50 text-blue-600"
+                : isCenter(node.type) || node.type === "City"
+                  ? "bg-green-50 text-green-600"
+                  : "bg-amber-50 text-amber-600"
             }`}
           >
-            {node.type === "City" ? (
+            {node.type === "Governorate" ? (
+              <Globe2 className="w-4 h-4" />
+            ) : isCenter(node.type) || node.type === "City" ? (
               <Building2 className="w-4 h-4" />
             ) : (
               <Home className="w-4 h-4" />
@@ -430,7 +481,7 @@ export function AdminRegions() {
 
           {/* Action Toolbar */}
           <div className="flex items-center gap-1 opacity-90 sm:opacity-0 sm:group-hover/item:opacity-100 transition-opacity bg-white/90 px-2 py-1 rounded-lg border border-slate-200/60 sm:border-none sm:bg-transparent shadow-sm sm:shadow-none">
-            {hasChildren && (
+            {nodeHasChildren && (
               <button
                 onClick={() => openAdd(node)}
                 className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors flex items-center gap-1 text-xs font-semibold"
@@ -515,10 +566,10 @@ export function AdminRegions() {
     let directCities = 0;
     let totalVillages = 0;
     govChildren.forEach((c) => {
-      if (c.type === "City") directCities++;
-      else if (c.type === "Village") totalVillages++;
+      if (isCenter(c.type)) directCities++;
+      else if (isLocality(c.type)) totalVillages++;
       c.children.forEach((v) => {
-        if (v.type === "Village") totalVillages++;
+        if (isLocality(v.type)) totalVillages++;
       });
     });
 
@@ -526,8 +577,8 @@ export function AdminRegions() {
       if (typeFilter === "all") return true;
       if (typeFilter === "active") return child.isActive;
       if (typeFilter === "inactive") return !child.isActive;
-      if (typeFilter === child.type) return true;
-      if (child.children.some((v) => v.type === typeFilter)) return true;
+      if (matchesType(child.type)) return true;
+      if (child.children.some((v) => matchesType(v.type))) return true;
       return false;
     });
 
@@ -578,14 +629,14 @@ export function AdminRegions() {
                   <div className="flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
                     <span className="flex items-center gap-1 text-green-700 font-bold">
                       <Building2 className="w-3 h-3" />
-                      {directCities} {language === "ar" ? "مدينة" : "City"}
+                      {directCities} {language === "ar" ? "مركز / مدينة" : "Center"}
                       {directCities !== 1 && language === "en" ? "s" : ""}
                     </span>
                     <span className="text-slate-300">|</span>
                     <span className="flex items-center gap-1 text-amber-700 font-bold">
                       <Home className="w-3 h-3" />
-                      {totalVillages} {language === "ar" ? "قرية" : "Village"}
-                      {totalVillages !== 1 && language === "en" ? "s" : ""}
+                      {totalVillages} {language === "ar" ? "قرية / منطقة" : "Locality"}
+                      {totalVillages !== 1 && language === "en" ? "ies" : "y"}
                     </span>
                   </div>
                 )}
@@ -604,7 +655,7 @@ export function AdminRegions() {
               title={t("addSubregion")}
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>{language === "ar" ? "إضافة مدينة" : "Add City"}</span>
+              <span>{language === "ar" ? "إضافة مركز" : "Add Center"}</span>
             </button>
             <button
               onClick={() => openEdit(gov)}
@@ -644,9 +695,9 @@ export function AdminRegions() {
             {isLoading ? (
               <div className="px-4 py-8 flex flex-col items-center justify-center gap-2 text-sm text-slate-500">
                 <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
-                {language === "ar"
-                  ? "جاري تحميل مدن المحافظة..."
-                  : "Loading cities..."}
+                  {language === "ar"
+                    ? "جاري تحميل المراكز والأحياء..."
+                    : "Loading centers..."}
               </div>
             ) : filteredCities.length === 0 ? (
               <div className="p-6 text-center text-xs text-slate-500 bg-slate-50/80">
@@ -823,8 +874,8 @@ export function AdminRegions() {
               {[
                 { id: "all", label: t("all") },
                 { id: "Governorate", label: t("governorates") },
-                { id: "City", label: t("cities") },
-                { id: "Village", label: t("villages") },
+                { id: "City", label: language === "ar" ? "مدن / مراكز" : "Cities / Centers" },
+                { id: "Village", label: language === "ar" ? "قرى / مناطق" : "Villages / Areas" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -915,7 +966,7 @@ export function AdminRegions() {
                         className={`p-2.5 rounded-xl border shrink-0 ${
                           node.type === "Governorate"
                             ? "bg-blue-50 text-blue-600 border-blue-100"
-                            : node.type === "City"
+                            : isCenter(node.type) || node.type === "City"
                               ? "bg-green-50 text-green-600 border-green-100"
                               : "bg-amber-50 text-amber-600 border-amber-100"
                         }`}
@@ -923,10 +974,10 @@ export function AdminRegions() {
                         {node.type === "Governorate" && (
                           <Globe2 className="w-5 h-5" />
                         )}
-                        {node.type === "City" && (
+                        {(isCenter(node.type) || node.type === "City") && (
                           <Building2 className="w-5 h-5" />
                         )}
-                        {node.type === "Village" && (
+                        {isLocality(node.type) && node.type !== "City" && (
                           <Home className="w-5 h-5" />
                         )}
                       </div>
@@ -1086,19 +1137,61 @@ export function AdminRegions() {
                       id: "Governorate",
                       label: language === "ar" ? "محافظة" : "Governorate",
                       icon: Globe2,
-                      color: "blue",
+                    },
+                    {
+                      id: "Qism",
+                      label: language === "ar" ? "قسم" : "Qism",
+                      icon: Building2,
+                    },
+                    {
+                      id: "Markaz",
+                      label: language === "ar" ? "مركز" : "Markaz",
+                      icon: Building2,
+                    },
+                    {
+                      id: "Hayy",
+                      label: language === "ar" ? "حي" : "District",
+                      icon: Building2,
+                    },
+                    {
+                      id: "Madina",
+                      label: language === "ar" ? "مدينة جديدة" : "New City",
+                      icon: Building2,
+                    },
+                    {
+                      id: "Region",
+                      label: language === "ar" ? "منطقة" : "Region",
+                      icon: MapPin,
+                    },
+                    {
+                      id: "Village",
+                      label: language === "ar" ? "قرية" : "Village",
+                      icon: Home,
+                    },
+                    {
+                      id: "Kafr",
+                      label: language === "ar" ? "كفر" : "Kafr",
+                      icon: Home,
+                    },
+                    {
+                      id: "Ezba",
+                      label: language === "ar" ? "عزبة" : "Ezba",
+                      icon: Home,
+                    },
+                    {
+                      id: "Shiyakha",
+                      label: language === "ar" ? "شياخة" : "Shiyakha",
+                      icon: Layers,
                     },
                     {
                       id: "City",
                       label: language === "ar" ? "مدينة" : "City",
                       icon: Building2,
-                      color: "green",
                     },
                     {
-                      id: "Village",
-                      label: language === "ar" ? "قرية / حي" : "Village / Dist",
+                      id: "Manshaat",
+                      label: language === "ar" ? "منشأة" : "Manshaat",
                       icon: Home,
-                      color: "amber",
                     },
                   ].map((tItem) => {
                     const Icon = tItem.icon;
@@ -1147,19 +1240,22 @@ export function AdminRegions() {
                       --
                     </option>
                     {roots.map((n) =>
-                      n.type ===
-                        (form.type === "City" ? "Governorate" : "City") &&
+                      (form.type === "Governorate"
+                        ? false
+                        : isCenter(form.type)
+                          ? n.type === "Governorate"
+                          : n.type === "Governorate") &&
                       n.id !== editTarget?.id ? (
                         <option key={n.id} value={n.id}>
                           {language === "ar" ? n.nameAr : n.nameEn} ({n.type})
                         </option>
                       ) : null,
                     )}
-                    {form.type === "Village" &&
+                    {isLocality(form.type) &&
                       roots.flatMap((g) =>
                         (loaded[g.id] ? g.children : [])
                           .filter(
-                            (c) => c.type === "City" && c.id !== editTarget?.id,
+                            (c) => isCenter(c.type) && c.id !== editTarget?.id,
                           )
                           .map((c) => (
                             <option key={c.id} value={c.id}>
@@ -1246,7 +1342,7 @@ export function AdminRegions() {
                 </strong>
                 ?
               </p>
-              {deleteTarget.type !== "Village" && (
+              {hasChildren(deleteTarget.type) && (
                 <div className="p-3.5 bg-red-50 text-red-700 rounded-2xl border border-red-200 text-xs font-bold flex items-center gap-2.5 text-left">
                   <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
                   <span>{t("deleteRegionCascade")}</span>

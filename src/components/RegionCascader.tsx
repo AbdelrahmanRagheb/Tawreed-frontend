@@ -146,7 +146,7 @@ export function RegionCascader({ value, onChange }: RegionCascaderProps) {
             onChange={handleCityChange}
             className="w-full h-11 px-4 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none bg-white transition-shadow"
           >
-            <option value="">{t('-- اختر المدينة --', '-- Select City --')}</option>
+            <option value="">{t('-- اختر المركز / المدينة --', '-- Select Center / City --')}</option>
             {cities.map((r) => (
               <option key={r.id} value={r.id}>
                 {t(r.nameAr, r.nameEn)}
@@ -163,7 +163,7 @@ export function RegionCascader({ value, onChange }: RegionCascaderProps) {
             onChange={handleVillageChange}
             className="w-full h-11 px-4 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none bg-white transition-shadow"
           >
-            <option value="">{t('-- اختر القرية/المنطقة --', '-- Select Village/Area --')}</option>
+            <option value="">{t('-- اختر المنطقة --', '-- Select Area --')}</option>
             {villages.map((r) => (
               <option key={r.id} value={r.id}>
                 {t(r.nameAr, r.nameEn)}

@@ -62,6 +62,9 @@ export interface BuyerOrderListItem {
   region: string;
   creatorName: string;
   supplierName: string;
+  creatorId: string;
+  isCreator: boolean;
+  isParticipant: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -73,8 +76,10 @@ export interface PaginatedResponse<T> {
 }
 
 export interface OrderProduct {
+  groupOrderItemId: string;
   productId: string;
   productName: string;
+  categoryId: string;
   currentQuantity: number;
   targetQuantity: number;
   unit: string;
@@ -90,6 +95,7 @@ export interface ParticipantItem {
 
 export interface Participant {
   id: string;
+  userId: string;
   name: string;
   joinedAt: string;
   items: ParticipantItem[];
@@ -107,6 +113,8 @@ export interface OrderDetailResponse {
   id: string;
   title: string;
   description: string;
+  creatorId: string;
+  creatorUserId: string;
   creatorName: string;
   region: string;
   createdAt: string;
@@ -118,7 +126,8 @@ export interface OrderDetailResponse {
   supplierId: string;
   products: OrderProduct[];
   participants: Participant[];
-  activities: OrderActivity[];
+  activities: Activity[];
+  isParticipant: boolean;
 }
 
 export interface CreateOrderRequest {
@@ -129,7 +138,7 @@ export interface CreateOrderRequest {
 }
 
 export interface JoinOrderRequest {
-  items: { groupOrderItemId: string; quantity: number }[];
+  items: { productId: string; quantity: number }[];
 }
 
 export interface JoinOrderResponse {
@@ -196,9 +205,6 @@ export const buyerService = {
 
   deleteDraft: (orderId: string) =>
     http.delete(`/buyer/orders/${orderId}/draft`),
-
-  publishDraft: (orderId: string) =>
-    http.post(`/buyer/orders/${orderId}/publish`),
 
   joinOrder: (orderId: string, data: JoinOrderRequest) =>
     http.post<JoinOrderResponse>(`/buyer/orders/${orderId}/join`, data),

@@ -16,6 +16,7 @@ import { BuyerDashboard } from "./pages/buyer/Dashboard";
 import { Orders } from "./pages/buyer/Orders";
 import { OrderDetail } from "./pages/buyer/OrderDetail";
 import { CreateOrder } from "./pages/buyer/CreateOrder";
+import { JoinOrder } from "./pages/buyer/JoinOrder";
 import { SavedOrders } from "./pages/buyer/SavedOrders";
 import { Notifications } from "./pages/buyer/Notifications";
 import { BuyerProfile } from "./pages/buyer/Profile";
@@ -117,6 +118,7 @@ function AppRoutes() {
           <Route index element={<BuyerDashboard />} />
           <Route path="orders" element={<Orders />} />
           <Route path="orders/:id" element={<OrderDetail />} />
+          <Route path="orders/:id/join" element={<JoinOrder />} />
           <Route path="create" element={<CreateOrder />} />
           <Route path="saved" element={<SavedOrders />} />
           <Route path="notifications" element={<Notifications />} />

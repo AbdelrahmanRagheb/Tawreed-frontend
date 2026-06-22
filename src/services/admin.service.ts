@@ -124,7 +124,8 @@ export interface AdminOrderListItem {
   supplierName: string;
   totalAmount: number;
   status: string;
-  region: string;
+  regionEn: string;
+  regionAr: string;
   createdAt: string;
   deadline: string;
   participants: number;
@@ -295,4 +296,10 @@ export const adminService = {
 
   updateProfile: (data: UpdateAdminProfileRequest) =>
     http.patch('/admin/profile', data),
+
+  getGroupRegionTypes: () =>
+    http.get<string[]>('/admin/settings/group-region-types'),
+
+  setGroupRegionTypes: (types: string[]) =>
+    http.put('/admin/settings/group-region-types', types),
 };

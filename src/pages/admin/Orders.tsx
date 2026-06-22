@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Clock, CheckCircle, XCircle, Truck, Package, AlertTriangle, Eye, X, MapPin, Users, Store, DollarSign, Activity } from 'lucide-react';
+import { ShoppingCart, Clock, CheckCircle, XCircle, Package, AlertTriangle, Eye, X, MapPin, Users, Store, DollarSign, Activity, Calendar } from 'lucide-react';
 import { useLanguage } from '../../i18n';
 import { adminService, type AdminOrderListItem } from '../../services/admin.service';
 
 const statusConfig: Record<string, { icon: typeof Clock; label: string; color: string; bg: string }> = {
   Open: { icon: Clock, label: 'Open', color: 'text-emerald-600', bg: 'bg-emerald-100' },
-  PendingApproval: { icon: Clock, label: 'Pending Approval', color: 'text-amber-600', bg: 'bg-amber-100' },
-  Locked: { icon: Package, label: 'Locked', color: 'text-blue-600', bg: 'bg-blue-100' },
+  Closed: { icon: Clock, label: 'Closed', color: 'text-slate-600', bg: 'bg-slate-200' },
   Completed: { icon: CheckCircle, label: 'Completed', color: 'text-emerald-600', bg: 'bg-emerald-100' },
   Cancelled: { icon: XCircle, label: 'Cancelled', color: 'text-red-600', bg: 'bg-red-100' },
-  Declined: { icon: XCircle, label: 'Declined', color: 'text-red-600', bg: 'bg-red-100' },
 };
 
 export function AdminOrders() {
@@ -110,6 +108,7 @@ export function AdminOrders() {
                 <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('region')}</th>
                 <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('status')}</th>
                 <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('participants')}</th>
+                <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('deadline')}</th>
                 <th className="text-end px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('value')}</th>
                 <th className="text-end px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('actions')}</th>
               </tr>
@@ -128,7 +127,7 @@ export function AdminOrders() {
                     <td className="px-5 py-3.5 text-sm text-slate-600">
                       <div className="flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span className="truncate">{order.region}</span>
+                        <span className="truncate">{language === 'ar' ? order.regionAr : order.regionEn}</span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5">
@@ -138,6 +137,12 @@ export function AdminOrders() {
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">{order.participants}</td>
+                    <td className="px-5 py-3.5 text-sm text-slate-600">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="text-[11px]">{new Date(order.deadline).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}</span>
+                      </div>
+                    </td>
                     <td className="px-5 py-3.5 text-end text-sm font-bold text-slate-900">EGP {order.totalAmount.toLocaleString()}</td>
                     <td className="px-5 py-3.5 text-end">
                       <button
@@ -193,13 +198,19 @@ export function AdminOrders() {
                 <div>
                   <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">{t('region')}</p>
                   <div className="flex items-center gap-1.5 text-sm text-slate-800 font-medium">
-                    <MapPin className="w-4 h-4 text-slate-400" /> {selectedOrder.region}
+                    <MapPin className="w-4 h-4 text-slate-400" /> {language === 'ar' ? selectedOrder.regionAr : selectedOrder.regionEn}
                   </div>
                 </div>
                 <div>
                   <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">{t('participants')}</p>
                   <div className="flex items-center gap-1.5 text-sm text-slate-800 font-medium">
                     <Users className="w-4 h-4 text-slate-400" /> {selectedOrder.participants}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold mb-1">{t('deadline')}</p>
+                  <div className="flex items-center gap-1.5 text-sm text-slate-800 font-medium">
+                    <Calendar className="w-4 h-4 text-slate-400" /> {new Date(selectedOrder.deadline).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
                   </div>
                 </div>
               </div>

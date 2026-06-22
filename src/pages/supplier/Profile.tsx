@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n';
 import { supplierService, type SupplierProfile } from '../../services/supplier.service';
+import { publicService, type PublicRegion } from '../../services/public.service';
 import { RegionCascader } from '../../components/RegionCascader';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,12 +21,14 @@ export function SupplierProfile() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [regions, setRegions] = useState<PublicRegion[]>([]);
   const [form, setForm] = useState({
     fullName: '', phone: '', companyName: '',
     address: '', regionId: '',
   });
 
   useEffect(() => {
+    publicService.listRegions().then((r) => setRegions(r.data)).catch(() => {});
     supplierService.getProfile()
       .then((profileRes) => {
         const p = profileRes.data;

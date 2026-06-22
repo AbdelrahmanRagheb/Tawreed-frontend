@@ -144,41 +144,49 @@ export function SupplierLayout() {
                 </div>
                 <span className="text-lg font-bold tracking-tight text-slate-800 uppercase">{t('appTitle')}</span>
              </div>
-             <button
-               onClick={() => {
-                 const newLang = language === 'en' ? 'ar' : 'en';
-                 setLanguage(newLang);
-                 syncPreferredLang(user?.role, newLang);
-               }}
-               className="text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1 font-medium"
-             >
-               <Globe className="w-5 h-5" />
-               <span className="text-sm uppercase font-bold">{language === 'en' ? 'AR' : 'EN'}</span>
-             </button>
-          </header>
+              <div className="flex items-center gap-2">
+                 <NavLink
+                   to="/supplier/profile"
+                   className="text-slate-500 hover:text-indigo-600 transition-colors"
+                 >
+                   <User className="w-5 h-5" />
+                 </NavLink>
+                 <button
+                   onClick={() => {
+                     const newLang = language === 'en' ? 'ar' : 'en';
+                     setLanguage(newLang);
+                     syncPreferredLang(user?.role, newLang);
+                   }}
+                   className="text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1 font-medium"
+                 >
+                   <Globe className="w-5 h-5" />
+                   <span className="text-sm uppercase font-bold">{language === 'en' ? 'AR' : 'EN'}</span>
+                 </button>
+              </div>
+           </header>
           <div className="h-full">
              <Outlet />
           </div>
        </main>
 
-       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-16 w-full z-50">
-         {navItems.map((item) => (
-           <NavLink
-             key={item.path}
-             to={item.path}
-             end={item.path === '/supplier'}
-             className={({ isActive }) =>
-               cn(
-                 "flex flex-col items-center justify-center w-full h-full text-[10px] font-medium transition-colors",
-                 isActive ? "text-indigo-600" : "text-slate-500"
-               )
-             }
-           >
-             <item.icon className="w-5 h-5 mb-1" />
-             {t(item.key as any)}
-           </NavLink>
-         ))}
-       </nav>
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center h-16 w-full z-50">
+          {navItems.filter((item) => item.key !== 'profile').map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === '/supplier'}
+              className={({ isActive }) =>
+                cn(
+                  "flex flex-col items-center justify-center w-full h-full text-[10px] font-medium transition-colors",
+                  isActive ? "text-indigo-600" : "text-slate-500"
+                )
+              }
+            >
+              <item.icon className="w-5 h-5 mb-1" />
+              {t(item.key as any)}
+            </NavLink>
+          ))}
+        </nav>
     </div>
   );
 }

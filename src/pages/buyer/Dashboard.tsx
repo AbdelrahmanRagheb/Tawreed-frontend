@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, TrendingUp, MapPin, Users, Calendar, Bell, DollarSign, Percent, ArrowRight, Clock, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../i18n';
 import { useAuth } from '../../contexts/AuthContext';
 import { buyerService, type BuyerDashboardResponse } from '../../services/buyer.service';
 
 export function BuyerDashboard() {
+  const navigate = useNavigate();
   const { language, t } = useLanguage();
   const { user } = useAuth();
   const [data, setData] = useState<BuyerDashboardResponse | null>(null);
@@ -73,14 +75,14 @@ export function BuyerDashboard() {
               <MapPin className="w-4 h-4 text-indigo-600" />
               <h2 className="text-sm font-bold text-slate-900">{t('ordersNearYou')}</h2>
             </div>
-            <button className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">{t('viewAll')} →</button>
+            <button onClick={() => navigate('/buyer/orders')} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">{t('viewAll')} →</button>
           </div>
           <div className="divide-y divide-slate-100">
             {nearbyOrders.length === 0 ? (
               <div className="px-5 py-8 text-center text-sm text-slate-500">{t('noNearbyOrders')}</div>
             ) : (
               nearbyOrders.map((order) => (
-                <div key={order.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors">
+                <div key={order.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => navigate('/buyer/orders/' + order.id)}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-slate-900 truncate">{order.productName}</p>
@@ -93,7 +95,7 @@ export function BuyerDashboard() {
                           <Users className="w-3 h-3" /> {order.currentParticipants}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" /> {new Date(order.deadline).toLocaleDateString()}
+                          <Calendar className="w-3 h-3" /> {new Date(order.deadline).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
                         </span>
                       </div>
                     </div>
@@ -117,14 +119,14 @@ export function BuyerDashboard() {
           ) : (
             <div className="divide-y divide-slate-100">
               {activeOrders.map((order) => (
-                <div key={order.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors">
+                <div key={order.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => navigate('/buyer/orders/' + order.id)}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-slate-900">{order.title}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{order.productCount} {t('items')}</p>
                       <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-500">
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" /> {new Date(order.deadline).toLocaleDateString()}
+                          <Calendar className="w-3 h-3" /> {new Date(order.deadline).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
                         </span>
                         <span className="flex items-center gap-1">
                           <DollarSign className="w-3 h-3" /> EGP {order.totalValue.toLocaleString()}
@@ -134,10 +136,10 @@ export function BuyerDashboard() {
                     <div className="text-right shrink-0">
                       <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold text-white ${
                         order.status === 'Open' ? 'bg-emerald-500' :
-                        order.status === 'PendingApproval' ? 'bg-amber-500' :
-                        order.status === 'Locked' ? 'bg-blue-500' :
+                        order.status === 'Closed' ? 'bg-slate-500' :
                         order.status === 'Completed' ? 'bg-emerald-500' :
-                        order.status === 'Cancelled' ? 'bg-red-500' : 'bg-slate-500'
+                        order.status === 'Cancelled' ? 'bg-red-500' :
+                        'bg-slate-500'
                       }`}>
                         {order.status}
                       </span>
@@ -147,7 +149,7 @@ export function BuyerDashboard() {
               ))}
             </div>
           )}
-          <button className="w-full py-3 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors border-t border-slate-100">
+          <button onClick={() => navigate('/buyer/orders')} className="w-full py-3 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors border-t border-slate-100">
             {t('viewAll')} {t('orders')} →
           </button>
         </div>
@@ -162,7 +164,7 @@ export function BuyerDashboard() {
               <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">{unreadNotificationCount}</span>
             )}
           </div>
-          <button className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">{t('viewAll')} →</button>
+          <button onClick={() => navigate('/buyer/orders')} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">{t('viewAll')} →</button>
         </div>
         {notifications.length === 0 ? (
           <div className="px-5 py-8 text-center text-sm text-slate-500">
@@ -193,7 +195,7 @@ export function BuyerDashboard() {
             <TrendingUp className="w-4 h-4 text-indigo-600" />
             <h2 className="text-sm font-bold text-slate-900">{t('trendingProducts')}</h2>
           </div>
-          <button className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">{t('viewAll')} →</button>
+          <button onClick={() => navigate('/buyer/orders')} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">{t('viewAll')} →</button>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {trendingProducts.map((product) => (
