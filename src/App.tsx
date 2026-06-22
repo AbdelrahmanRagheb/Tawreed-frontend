@@ -9,7 +9,7 @@ import { BuyerLayout } from "./layouts/BuyerLayout";
 import { SupplierLayout } from "./layouts/SupplierLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
 
-import { Splash } from "./pages/auth/Splash";
+import { HomePage } from "./pages/HomePage";
 import { Login } from "./pages/auth/Login";
 import { Register } from "./pages/auth/Register";
 import { BuyerDashboard } from "./pages/buyer/Dashboard";
@@ -84,26 +84,10 @@ function AppRoutes() {
       dir={language === "ar" ? "rtl" : "ltr"}
     >
       <Routes>
-        <Route
-          path="/"
-          element={
-            user ? (
-              <Navigate to={`/${user.role}`} />
-            ) : (
-              <Navigate to="/auth/splash" />
-            )
-          }
-        />
+        <Route path="/" element={<HomePage />} />
 
         <Route path="/auth" element={<AuthLayout />}>
-          <Route
-            path="splash"
-            element={
-              <PublicRoute>
-                <Splash />
-              </PublicRoute>
-            }
-          />
+          <Route index element={<Navigate to="login" replace />} />
           <Route
             path="login"
             element={
