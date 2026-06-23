@@ -182,6 +182,44 @@ export interface BuyerUpdateProfileRequest {
   preferredLang?: string;
 }
 
+export interface EligibleSupplier {
+  supplierId: string;
+  supplierName: string;
+  rating: number;
+  totalEstimatedCost: number;
+}
+
+export interface SupplierPublicPricingTier {
+  minQty: number;
+  maxQty: number | null;
+  unitPrice: number;
+  isCurrentTier: boolean;
+}
+
+export interface SupplierPublicProduct {
+  supplierProductId: string;
+  productId: string;
+  productName: string;
+  categoryId: string;
+  categoryName: string;
+  unit: string;
+  basePrice: number;
+  availableStock: number;
+  isRequiredByOrder: boolean;
+  orderRequestedQty: number | null;
+  imageUrl: string | null;
+  pricingTiers: SupplierPublicPricingTier[];
+}
+
+export interface SupplierPublicProfile {
+  supplierId: string;
+  supplierName: string;
+  rating: number;
+  address: string | null;
+  categories: string[];
+  products: SupplierPublicProduct[];
+}
+
 export const buyerService = {
   getDashboard: (regionId?: string) =>
     http.get<BuyerDashboardResponse>('/buyer/dashboard', {
@@ -193,6 +231,12 @@ export const buyerService = {
 
   getOrderDetail: (orderId: string) =>
     http.get<OrderDetailResponse>(`/buyer/orders/${orderId}`),
+
+  getEligibleSuppliers: (orderId: string) =>
+    http.get<EligibleSupplier[]>(`/buyer/orders/${orderId}/eligible-suppliers`),
+
+  getSupplierProfile: (orderId: string, supplierId: string) =>
+    http.get<SupplierPublicProfile>(`/buyer/orders/${orderId}/suppliers/${supplierId}`),
 
   createOrder: (data: CreateOrderRequest) =>
     http.post('/buyer/orders', data),

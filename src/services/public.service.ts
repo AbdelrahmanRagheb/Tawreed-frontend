@@ -51,8 +51,11 @@ export interface NotificationItem {
   type: string;
   titleEn: string;
   titleAr: string;
+  bodyEn: string | null;
+  bodyAr: string | null;
   isRead: boolean;
   createdAt: string;
+  relatedOrderId: string | null;
 }
 
 export const publicService = {
