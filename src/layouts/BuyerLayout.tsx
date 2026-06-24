@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, Package, PlusCircle, Bell, User, LogOut, Globe, Bookmark } from 'lucide-react';
+import { Home, Package, PlusCircle, Bell, User, LogOut, Globe, Bookmark, Truck } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { cn } from '../lib/utils';
 import { syncPreferredLang } from '../services/auth.service';
@@ -21,6 +21,7 @@ export function BuyerLayout() {
     { icon: Bookmark, key: 'saved', path: '/buyer/saved' },
     { icon: PlusCircle, key: 'create', path: '/buyer/create' },
     { icon: Bell, key: 'alerts', path: '/buyer/notifications' },
+    { icon: Truck, key: 'deliveries', path: '/buyer/deliveries' },
     { icon: User, key: 'profile', path: '/buyer/profile' },
   ];
 

@@ -126,7 +126,7 @@ export interface OrderDetailResponse {
   supplierId: string;
   products: OrderProduct[];
   participants: Participant[];
-  activities: Activity[];
+  activities: OrderActivity[];
   isParticipant: boolean;
 }
 
@@ -139,6 +139,23 @@ export interface CreateOrderRequest {
 
 export interface JoinOrderRequest {
   items: { productId: string; quantity: number }[];
+}
+
+export interface BuyerDeliveryItem {
+  productName: string;
+  quantity: number;
+}
+
+export interface BuyerDeliveryDto {
+  id: string;
+  orderId: string;
+  orderTitle: string;
+  status: string;
+  scheduledAt?: string;
+  deliveryPersonName?: string;
+  verificationCode: string;
+  shippingAddress: string;
+  items: BuyerDeliveryItem[];
 }
 
 export interface JoinOrderResponse {
@@ -238,6 +255,9 @@ export const buyerService = {
   getSupplierProfile: (orderId: string, supplierId: string) =>
     http.get<SupplierPublicProfile>(`/buyer/orders/${orderId}/suppliers/${supplierId}`),
 
+  assignSupplier: (orderId: string, supplierId: string) =>
+    http.post(`/buyer/orders/${orderId}/assign-supplier/${supplierId}`),
+
   createOrder: (data: CreateOrderRequest) =>
     http.post('/buyer/orders', data),
 
@@ -259,9 +279,15 @@ export const buyerService = {
   updateParticipantItems: (orderId: string, participantId: string, data: UpdateItemsRequest) =>
     http.put(`/buyer/orders/${orderId}/participants/${participantId}/items`, data),
 
+  updateOrderItems: (orderId: string, items: { productId: string; targetQuantity: number }[]) =>
+    http.put(`/buyer/orders/${orderId}/items`, items),
+
   getProfile: () =>
     http.get<BuyerProfile>('/buyer/profile'),
 
   updateProfile: (data: BuyerUpdateProfileRequest) =>
     http.put('/buyer/profile', data),
+
+  getMyDeliveries: () =>
+    http.get<BuyerDeliveryDto[]>('/buyer/deliveries'),
 };

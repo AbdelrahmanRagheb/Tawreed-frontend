@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   DollarSign, ShoppingCart, Truck, Package, Clock, AlertTriangle,
   TrendingUp, Activity, AlertCircle,
@@ -7,6 +8,7 @@ import { useLanguage } from '../../i18n';
 import { supplierService, type SupplierDashboardResponse } from '../../services/supplier.service';
 
 export function SupplierDashboard() {
+  const navigate = useNavigate();
   const { language, t } = useLanguage();
   const [data, setData] = useState<SupplierDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,15 +110,18 @@ export function SupplierDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {pendingOrders.map((order: any) => (
+                {pendingOrders.map((order) => (
                   <tr key={order.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                     <td className="px-5 py-4">
-                      <p className="text-sm font-medium text-slate-900">{order.title || order.orderNumber}</p>
+                      <p className="text-sm font-medium text-slate-900">{order.title}</p>
                     </td>
-                    <td className="px-5 py-4 text-sm text-slate-700">{order.participants || order.items?.length || 0}</td>
-                    <td className="px-5 py-4 text-sm font-semibold text-slate-900">{(order.totalValue || order.totalAmount || 0).toLocaleString()} EGP</td>
+                    <td className="px-5 py-4 text-sm text-slate-700">{order.participants}</td>
+                    <td className="px-5 py-4 text-sm font-semibold text-slate-900">{order.totalAmount.toLocaleString()} EGP</td>
                     <td className="px-5 py-4 text-end">
-                      <button className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                      <button
+                        onClick={() => navigate('/supplier/orders')}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                      >
                         {t('reviewOrder')}
                       </button>
                     </td>
@@ -166,7 +171,7 @@ export function SupplierDashboard() {
             ) : (
               recentActivity.map((item, idx) => (
                 <div key={idx} className="px-5 py-3 hover:bg-slate-50/50">
-                  <p className="text-xs text-slate-700 leading-relaxed">{item.action}</p>
+                  <p className="text-xs text-slate-700 leading-relaxed">{language === 'ar' ? item.actionAr : item.actionEn}</p>
                   <p className="text-[10px] text-slate-400 mt-1">{new Date(item.time).toLocaleDateString()}</p>
                 </div>
               ))

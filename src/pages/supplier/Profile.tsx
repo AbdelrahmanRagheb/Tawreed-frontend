@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   User, Mail, Phone, Building2, MapPin, Calendar, Shield,
   AlertTriangle, Edit3, Save, X, Briefcase,
-  BadgePercent, CheckCircle, ArrowLeft, Star
+  BadgePercent, CheckCircle, ArrowLeft, Star,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../i18n';

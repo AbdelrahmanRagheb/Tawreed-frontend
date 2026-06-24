@@ -8,6 +8,7 @@ const typeConfig: Record<string, { icon: typeof Package; color: string; bg: stri
   order: { icon: Package, color: 'text-indigo-600', bg: 'bg-indigo-100' },
   message: { icon: MessageSquare, color: 'text-emerald-600', bg: 'bg-emerald-100' },
   system: { icon: Info, color: 'text-amber-600', bg: 'bg-amber-100' },
+  SupplierAssignedOrder: { icon: Package, color: 'text-indigo-600', bg: 'bg-indigo-100' },
 };
 
 export function SupplierNotifications() {
@@ -21,8 +22,10 @@ export function SupplierNotifications() {
     if (!user?.id) return;
     try {
       const res = await publicService.getUnreadNotifications(user.id);
+      console.log('[Notifications] API response:', res.data);
       setNotifications(res.data);
     } catch (err: any) {
+      console.error('[Notifications] API error:', err?.response?.data || err?.message || err);
       setError(err?.response?.data?.message || err?.message || 'Failed to load notifications');
     } finally {
       setLoading(false);
@@ -98,6 +101,11 @@ export function SupplierNotifications() {
                   </h3>
                   {!notification.isRead && <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0 mt-1.5" />}
                 </div>
+                {(language === 'ar' ? notification.bodyAr : notification.bodyEn) && (
+                  <p className="text-xs text-slate-600 mt-1">
+                    {language === 'ar' ? notification.bodyAr : notification.bodyEn}
+                  </p>
+                )}
                 <p className="text-xs text-slate-400 mt-1.5">
                   {new Date(notification.createdAt).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', {
                     month: 'short',

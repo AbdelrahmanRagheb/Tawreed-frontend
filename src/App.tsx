@@ -10,6 +10,7 @@ import { SupplierLayout } from "./layouts/SupplierLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
 
 import { HomePage } from "./pages/HomePage";
+import { ErrorPage } from "./pages/ErrorPage";
 import { Login } from "./pages/auth/Login";
 import { Register } from "./pages/auth/Register";
 import { BuyerDashboard } from "./pages/buyer/Dashboard";
@@ -20,6 +21,7 @@ import { JoinOrder } from "./pages/buyer/JoinOrder";
 import { SavedOrders } from "./pages/buyer/SavedOrders";
 import { Notifications } from "./pages/buyer/Notifications";
 import { BuyerProfile } from "./pages/buyer/Profile";
+import { BuyerDeliveries } from "./pages/buyer/Deliveries";
 import { SupplierDashboard } from "./pages/supplier/Dashboard";
 import { SupplierProducts } from "./pages/supplier/Products";
 import { SupplierOrders } from "./pages/supplier/Orders";
@@ -122,6 +124,7 @@ function AppRoutes() {
           <Route path="create" element={<CreateOrder />} />
           <Route path="saved" element={<SavedOrders />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="deliveries" element={<BuyerDeliveries />} />
           <Route path="profile" element={<BuyerProfile />} />
         </Route>
 
@@ -161,6 +164,9 @@ function AppRoutes() {
           <Route path="settings" element={<AdminSettings />} />
           <Route path="profile" element={<AdminProfile />} />
         </Route>
+
+        <Route path="/error" element={<ErrorPage />} />
+        <Route path="*" element={<ErrorPage />} />
       </Routes>
     </div>
   );

@@ -27,14 +27,26 @@ export interface DeliveryOverview {
   failed: number;
 }
 
+export interface SupplierPendingOrder {
+  id: string;
+  title: string;
+  creatorName: string;
+  participants: number;
+  totalAmount: number;
+  deadline: string;
+  region: string;
+  receivedAt: string;
+}
+
 export interface RecentActivity {
-  action: string;
+  actionEn: string;
+  actionAr: string;
   time: string;
 }
 
 export interface SupplierDashboardResponse {
   kpi: SupplierKpi;
-  pendingOrders: any[];
+  pendingOrders: SupplierPendingOrder[];
   activeGroupOrders: ActiveGroupOrder[];
   inventoryAlerts: any[];
   deliveryOverview: DeliveryOverview;
@@ -55,6 +67,7 @@ export interface SupplierProfile {
   ratingAvg: number;
   isApproved: boolean;
   preferredLang: string;
+  categoryIds: string[];
 }
 
 export interface UpdateProfileRequest {
@@ -130,6 +143,12 @@ export interface SupplierOrderListItem {
   region: string;
   receivedAt: string;
   items: SupplierOrderItem[];
+}
+
+export interface AcceptOrderPayload {
+  notes?: string;
+  scheduledDeliveryAt: string;
+  deliveryNotes?: string;
 }
 
 export interface AcceptDeclineResponse {
@@ -208,8 +227,8 @@ export const supplierService = {
   listOrders: (params?: { status?: string; page?: number; limit?: number }) =>
     http.get<PaginatedResponse<SupplierOrderListItem>>('/supplier/orders', { params }),
 
-  acceptOrder: (orderId: string, notes?: string) =>
-    http.post<AcceptDeclineResponse>(`/supplier/orders/${orderId}/accept`, notes || ''),
+  acceptOrder: (orderId: string, data: AcceptOrderPayload) =>
+    http.post<AcceptDeclineResponse>(`/supplier/orders/${orderId}/accept`, data),
 
   declineOrder: (orderId: string, reason?: string) =>
     http.post<AcceptDeclineResponse>(`/supplier/orders/${orderId}/decline`, reason || ''),
@@ -219,4 +238,10 @@ export const supplierService = {
 
   updateDeliveryStatus: (deliveryId: string, data: UpdateDeliveryStatusRequest) =>
     http.patch(`/supplier/deliveries/${deliveryId}/status`, data),
+
+  updateCategories: (categoryIds: string[]) =>
+    http.put('/supplier/profile/categories', categoryIds),
+
+  getCategoryIds: () =>
+    http.get<string[]>('/supplier/profile/categories'),
 };

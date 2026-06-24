@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Edit3, Trash2, AlertTriangle, X, Layers, Save, Plus, ChevronDown, ChevronUp, Package, ShoppingBag } from 'lucide-react';
+import { Search, Edit3, Trash2, AlertTriangle, X, Layers, Save, Plus, ChevronDown, ChevronUp, Package, ShoppingBag, Tags, Loader2 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
-import { publicService, type PublicProduct } from '../../services/public.service';
+import { publicService, type PublicProduct, type PublicCategory } from '../../services/public.service';
 import { supplierService, type SupplierProductListItem, type PricingTier, type CreatePricingTierRequest, type UpdatePricingTierRequest } from '../../services/supplier.service';
 
-type Tab = 'mine' | 'browse';
+type Tab = 'mine' | 'browse' | 'categories';
 
 const emptyTierForm: CreatePricingTierRequest = { minQty: 1, maxQty: null, unitPrice: 0 };
 
@@ -38,6 +38,14 @@ export function SupplierProducts() {
   const [tierError, setTierError] = useState('');
   const [tiersExpanded, setTiersExpanded] = useState(false);
 
+  // Categories state
+  const [allCategories, setAllCategories] = useState<PublicCategory[]>([]);
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [savingCategory, setSavingCategory] = useState<string | null>(null);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [showAllProducts, setShowAllProducts] = useState(false);
+  const [joinPrompt, setJoinPrompt] = useState<{product: PublicProduct; categoryName: string} | null>(null);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -58,24 +66,73 @@ export function SupplierProducts() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const loadCategories = useCallback(async () => {
+    const [catRes, idsRes] = await Promise.all([
+      publicService.listCategories().catch(() => ({ data: [] as PublicCategory[] })),
+      supplierService.getCategoryIds().catch(() => ({ data: [] as string[] })),
+    ]);
+    setAllCategories(catRes.data);
+    setCategoryIds(idsRes.data);
+    setCategoriesLoading(false);
+  }, []);
+
+  useEffect(() => { loadCategories(); }, [loadCategories]);
+
   const supplierByProductId = new Map<string, SupplierProductListItem>();
   supplierProducts.forEach(sp => supplierByProductId.set(sp.productId, sp));
 
   const ownedProducts = supplierProducts;
   const unownedProducts = catalogProducts.filter(cat => !supplierByProductId.has(cat.id));
 
+  const unownedInCategories = unownedProducts.filter(p => categoryIds.includes(p.categoryId));
+  const unownedOutsideCategories = unownedProducts.filter(p => !categoryIds.includes(p.categoryId));
+  const browseProducts = showAllProducts ? unownedProducts : unownedInCategories;
+  const filteredBrowseProducts = browseProducts.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
+
   const filteredOwned = ownedProducts.filter(sp =>
     sp.productName.toLowerCase().includes(search.toLowerCase())
   );
 
-  const filteredUnowned = unownedProducts.filter(cat =>
-    cat.name.toLowerCase().includes(search.toLowerCase())
+  const filteredCategories = allCategories.filter(c =>
+    (language === 'ar' ? c.nameAr : c.nameEn).toLowerCase().includes(search.toLowerCase())
   );
+
+  const toggleCategory = async (id: string) => {
+    const updated = categoryIds.includes(id)
+      ? categoryIds.filter((c) => c !== id)
+      : [...categoryIds, id];
+    setCategoryIds(updated);
+    setSavingCategory(id);
+    try {
+      await supplierService.updateCategories(updated);
+    } catch {
+      setCategoryIds(categoryIds);
+    } finally {
+      setSavingCategory(null);
+    }
+  };
 
   const closeAll = () => {
     setAddModalProduct(null);
     setDetailProduct(null);
     setDeleteTarget(null);
+    setJoinPrompt(null);
+  };
+
+  const handleJoinAndAdd = async () => {
+    if (!joinPrompt) return;
+    const { product } = joinPrompt;
+    const updated = [...categoryIds, product.categoryId];
+    setCategoryIds(updated);
+    try {
+      await supplierService.updateCategories(updated);
+      setJoinPrompt(null);
+      openAdd(product);
+    } catch {
+      setCategoryIds(categoryIds);
+    }
   };
 
   // --- Add logic ---
@@ -246,6 +303,24 @@ export function SupplierProducts() {
             </span>
           )}
         </button>
+        <button
+          onClick={() => setTab('categories')}
+          className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+            tab === 'categories'
+              ? 'bg-white text-indigo-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Tags className="w-4 h-4" />
+          {t('categories')}
+          {categoryIds.length > 0 && (
+            <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+              tab === 'categories' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'
+            }`}>
+              {categoryIds.length}
+            </span>
+          )}
+        </button>
       </div>
 
       <div className="relative mb-4">
@@ -254,7 +329,7 @@ export function SupplierProducts() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={tab === 'mine' ? t('searchYourProducts') : t('searchProducts')}
+          placeholder={tab === 'mine' ? t('searchYourProducts') : tab === 'categories' ? t('searchCategories') : t('searchProducts')}
           className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
@@ -339,50 +414,181 @@ export function SupplierProducts() {
             </div>
           )}
         </div>
-      ) : (
-        /* ───── Browse Catalog Table ───── */
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('product')}</th>
-                  <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('category')}</th>
-                  <th className="text-end px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredUnowned.map((cat) => (
-                  <tr key={cat.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-50 to-slate-100 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
-                          {cat.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-sm font-medium text-slate-900">{cat.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-600">{cat.categoryName}</td>
-                    <td className="px-5 py-3.5 text-end">
+      ) : tab === 'categories' ? (
+        /* ───── Categories ───── */
+        <div className="bg-white rounded-xl border border-slate-200 p-6">
+          {categoriesLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm text-slate-600 mb-4">{t('categoriesConfigured')}: {categoryIds.length}</p>
+              <div className="flex flex-wrap gap-2">
+                {allCategories.length === 0 ? (
+                  <p className="text-sm text-slate-400 w-full">{t('noCategories')}</p>
+                ) : filteredCategories.length === 0 ? (
+                  <p className="text-sm text-slate-400 w-full">{t('noResults')}</p>
+                ) : (
+                  filteredCategories.map((c) => {
+                    const selected = categoryIds.includes(c.id);
+                    return (
                       <button
-                        onClick={() => openAdd(cat)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
+                        key={c.id}
+                        onClick={() => toggleCategory(c.id)}
+                        disabled={savingCategory === c.id}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all disabled:opacity-50 ${
+                          selected
+                            ? 'bg-indigo-100 border-indigo-300 text-indigo-700'
+                            : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                        }`}
                       >
-                        <Plus className="w-3 h-3" />
-                        {t('add')}
+                        {savingCategory === c.id && <Loader2 className="w-3 h-3 animate-spin" />}
+                        {language === 'ar' ? c.nameAr : c.nameEn}
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {filteredUnowned.length === 0 && (
-            <div className="px-5 py-12 text-center">
-              <ShoppingBag className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm text-slate-500">{t('noProductsInCatalog')}</p>
+                    );
+                  })
+                )}
+              </div>
             </div>
           )}
+        </div>
+      ) : (
+        /* ───── Browse Catalog ───── */
+        <div>
+          {/* Toggle */}
+          {categoryIds.length > 0 && (
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={() => setShowAllProducts(!showAllProducts)}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+                  showAllProducts ? 'bg-indigo-600' : 'bg-slate-300'
+                }`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                  showAllProducts ? 'translate-x-4' : 'translate-x-0'
+                }`} />
+              </button>
+              <span className="text-sm text-slate-600">{t('showAllProducts')}</span>
+            </div>
+          )}
+
+          {/* No categories selected */}
+          {!showAllProducts && categoryIds.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+              <Tags className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm text-slate-500">{t('selectCategoriesFirst')}</p>
+              <button
+                onClick={() => setTab('categories')}
+                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+              >
+                <Tags className="w-4 h-4" />
+                {t('categories')}
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('product')}</th>
+                      <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('category')}</th>
+                      <th className="text-end px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{t('actions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredBrowseProducts.map((cat) => {
+                      const inCategory = categoryIds.includes(cat.categoryId);
+                      return (
+                        <tr key={cat.id} className={`transition-colors ${!inCategory ? 'bg-amber-50/40' : 'hover:bg-slate-50'}`}>
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-50 to-slate-100 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
+                                {cat.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-sm font-medium text-slate-900">{cat.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 text-sm">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="text-slate-600">{cat.categoryName}</span>
+                              {!inCategory && (
+                                <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 whitespace-nowrap">
+                                  {t('notInYourCategories')}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 text-end">
+                            {inCategory ? (
+                              <button
+                                onClick={() => openAdd(cat)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
+                              >
+                                <Plus className="w-3 h-3" />
+                                {t('add')}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setJoinPrompt({ product: cat, categoryName: cat.categoryName })}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-600 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+                              >
+                                <Plus className="w-3 h-3" />
+                                {t('add')}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {filteredBrowseProducts.length === 0 && (
+                <div className="px-5 py-12 text-center">
+                  <ShoppingBag className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500">{t('noProductsInCatalog')}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ───── Join Category Prompt ───── */}
+      {joinPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={closeAll}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                <Tags className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">{t('categories')}</h2>
+              </div>
+            </div>
+            <p className="text-sm text-slate-600 mb-6">
+              {language === 'ar'
+                ? `هذا المنتج ضمن ${joinPrompt.categoryName}. هل تريد إضافة هذا التصنيف لحسابك؟`
+                : `This product is in ${joinPrompt.categoryName}. Add this category to your profile?`
+              }
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={closeAll}
+                className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                onClick={handleJoinAndAdd}
+                className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                {t('addCategoryAndContinue')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
