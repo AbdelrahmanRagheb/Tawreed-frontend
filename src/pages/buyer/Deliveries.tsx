@@ -69,7 +69,7 @@ export function BuyerDeliveries() {
               <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-bold text-slate-900">{delivery.orderTitle}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{delivery.shippingAddress}</p>
+                   <p className="text-xs text-slate-500 mt-0.5">{delivery.shippingRegion}</p>
                 </div>
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.bg} ${cfg.color}`}>
                   <StatusIcon className="w-3 h-3" />

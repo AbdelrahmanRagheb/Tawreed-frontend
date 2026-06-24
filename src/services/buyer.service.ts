@@ -154,7 +154,7 @@ export interface BuyerDeliveryDto {
   scheduledAt?: string;
   deliveryPersonName?: string;
   verificationCode: string;
-  shippingAddress: string;
+  shippingRegion: string;
   items: BuyerDeliveryItem[];
 }
 
