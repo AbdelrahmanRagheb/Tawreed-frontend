@@ -142,6 +142,9 @@ export interface SupplierOrderListItem {
   deadline: string;
   region: string;
   receivedAt: string;
+  deliveryPreference?: string;
+  preferredDeliveryPersonId?: string;
+  preferredDeliveryPersonName?: string;
   items: SupplierOrderItem[];
 }
 
@@ -182,6 +185,16 @@ export interface UpdateDeliveryStatusRequest {
   status: string;
   trackingNotes?: string;
   scheduledAt?: string;
+}
+
+export interface AvailableDeliveryPerson {
+  id: string;
+  fullName: string;
+  rating: number;
+  totalDeliveries: number;
+  baseDeliveryFee: number;
+  vehicleType?: string;
+  coverageRegion?: string;
 }
 
 export const supplierService = {
@@ -244,4 +257,22 @@ export const supplierService = {
 
   getCategoryIds: () =>
     http.get<string[]>('/supplier/profile/categories'),
+
+  browseAvailableDeliveryPersons: (orderId: string) =>
+    http.get<AvailableDeliveryPerson[]>(`/supplier/orders/${orderId}/available-delivery-persons`),
+
+  assignDeliveryPerson: (orderId: string, deliveryPersonId: string) =>
+    http.post(`/supplier/orders/${orderId}/assign-delivery-person/${deliveryPersonId}`),
+
+  requestDeliveryPerson: (orderId: string, deliveryPersonId: string) =>
+    http.post(`/supplier/orders/${orderId}/request-delivery/${deliveryPersonId}`),
+
+  proposeDeliveryFee: (orderId: string, data: { fee: number; notes?: string }) =>
+    http.post(`/supplier/orders/${orderId}/propose-delivery-fee`, data),
+
+  useOwnDelivery: (orderId: string) =>
+    http.post(`/supplier/orders/${orderId}/use-own-delivery`),
+
+  cancelOrderFromSupplier: (orderId: string) =>
+    http.post(`/supplier/orders/${orderId}/cancel`),
 };

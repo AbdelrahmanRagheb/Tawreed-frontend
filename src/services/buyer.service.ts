@@ -24,6 +24,7 @@ export interface DashboardOrder {
 
 export interface NearbyOrder {
   id: string;
+  title: string;
   creatorName: string;
   productName: string;
   quantity: number;
@@ -104,7 +105,8 @@ export interface Participant {
 export interface OrderActivity {
   id: string;
   eventType: string;
-  notes: string;
+  notesAr: string;
+  notesEn: string;
   createdBy: string;
   createdAt: string;
 }
@@ -124,6 +126,12 @@ export interface OrderDetailResponse {
   totalOrderValue: number;
   supplierName: string;
   supplierId: string;
+  deliveryPreference?: string;
+  preferredDeliveryPersonId?: string;
+  preferredDeliveryPersonName?: string;
+  proposedDeliveryFee?: number;
+  deliveryApprovalStatus?: string;
+  assignedDeliveryPersonName?: string;
   products: OrderProduct[];
   participants: Participant[];
   activities: OrderActivity[];
@@ -290,4 +298,28 @@ export const buyerService = {
 
   getMyDeliveries: () =>
     http.get<BuyerDeliveryDto[]>('/buyer/deliveries'),
+
+  setDeliveryPreference: (orderId: string, data: { preference: string; preferredDeliveryPersonId?: string }) =>
+    http.put(`/buyer/orders/${orderId}/delivery-preference`, data),
+
+  approveDeliveryFee: (orderId: string, data: { isApproved: boolean; reason?: string }) =>
+    http.post(`/buyer/orders/${orderId}/approve-delivery`, data),
+
+  getAvailableDeliveryPersons: (orderId: string) =>
+    http.get<BuyerAvailableDeliveryPerson[]>(`/buyer/orders/${orderId}/available-delivery-persons`),
 };
+
+export interface BuyerAvailableDeliveryPerson {
+  id: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  vehicleType: string;
+  baseDeliveryFee: number;
+  rating: number;
+  totalDeliveries: number;
+  isActive: boolean;
+  coverageRegionId?: string;
+  coverageRegionName?: string;
+}

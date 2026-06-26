@@ -85,8 +85,8 @@ export function BuyerDashboard() {
                 <div key={order.id} className="px-5 py-3.5 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => navigate('/buyer/orders/' + order.id)}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-slate-900 truncate">{order.productName}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{t('host')}: {order.creatorName}</p>
+                      <p className="text-sm font-semibold text-slate-900 truncate">{order.title}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{order.productName} x{order.quantity} · {t('host')}: {order.creatorName}</p>
                       <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-500">
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3 h-3" /> {order.region}

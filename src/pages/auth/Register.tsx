@@ -4,10 +4,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../services/auth.service';
 import { publicService, type PublicCategory, type PublicBusinessType } from '../../services/public.service';
 import { useLanguage } from '../../i18n';
-import { UserPlus, Loader2, ShoppingCart, Truck, Mail, Lock, User, Phone, ArrowRight } from 'lucide-react';
+import { UserPlus, Loader2, ShoppingCart, Truck, Bike, Mail, Lock, User, Phone, ArrowRight } from 'lucide-react';
 import { RegionCascader } from '../../components/RegionCascader';
+import { RegionTagSelector } from '../../components/RegionTagSelector';
 
-type Role = 'Buyer' | 'Supplier';
+type Role = 'Buyer' | 'Supplier' | 'DeliveryPerson';
 
 export function Register() {
   const navigate = useNavigate();
@@ -32,6 +33,11 @@ export function Register() {
   const [companyName, setCompanyName] = useState('');
   const [taxId, setTaxId] = useState('');
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
+
+  // Delivery person fields
+  const [vehicleType, setVehicleType] = useState('');
+  const [baseDeliveryFee, setBaseDeliveryFee] = useState(0);
+  const [coverageRegionId, setCoverageRegionId] = useState('');
 
   useEffect(() => {
     publicService.listBusinessTypes().then((b) => setBusinessTypes(b.data)).catch(() => {});
@@ -61,6 +67,16 @@ export function Register() {
         localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
         await login(email.trim(), password);
+      } else if (role === 'DeliveryPerson') {
+        const res = await authService.registerDeliveryPerson({
+          fullName: fullName.trim(), email: email.trim(), phone, password,
+          vehicleType, baseDeliveryFee, coverageRegionId,
+        });
+        const { token, refreshToken, user } = res.data;
+        localStorage.setItem('token', token);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('user', JSON.stringify(user));
+        await login(email.trim(), password);
       } else {
         const res = await authService.registerSupplier({
           fullName: fullName.trim(), email: email.trim(), phone, password,
@@ -72,7 +88,7 @@ export function Register() {
         localStorage.setItem('user', JSON.stringify(user));
         await login(email.trim(), password);
       }
-      navigate(`/${role.toLowerCase()}`);
+      navigate(role === 'DeliveryPerson' ? '/delivery' : `/${role.toLowerCase()}`);
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || t('registerFailed'));
     } finally {
@@ -88,10 +104,11 @@ export function Register() {
       </div>
 
       {/* Role selector */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
         {([
           { role: 'Buyer' as Role, icon: ShoppingCart, descKey: 'buyerDesc' },
           { role: 'Supplier' as Role, icon: Truck, descKey: 'supplierDesc' },
+          { role: 'DeliveryPerson' as Role, icon: Bike, descKey: 'deliveryDesc' },
         ]).map(({ role: r, icon: Icon, descKey }) => (
           <button
             key={r}
@@ -201,6 +218,33 @@ export function Register() {
               </div>
             </>
           )}
+
+          {/* Delivery Person fields */}
+          {role === 'DeliveryPerson' && (
+            <>
+              <div>
+                <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                  <option value="">{t('selectVehicleType')}</option>
+                  <option value="Car">Car</option>
+                  <option value="Motorcycle">Motorcycle</option>
+                  <option value="Van">Van</option>
+                  <option value="Truck">Truck</option>
+                  <option value="Bicycle">Bicycle</option>
+                </select>
+              </div>
+              <div className="relative">
+                <input type="number" value={baseDeliveryFee || ''} onChange={(e) => setBaseDeliveryFee(parseFloat(e.target.value) || 0)}
+                  placeholder={t('baseDeliveryFee')}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">{t('coverageRegion')} *</label>
+                <RegionTagSelector value={coverageRegionId} onChange={setCoverageRegionId} />
+              </div>
+            </>
+          )}
+
         </div>
 
         {error && (

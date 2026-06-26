@@ -92,6 +92,9 @@ export const publicService = {
   getRegionChildren: (parentId: string) =>
     http.get<PublicRegion[]>(`/regions/${parentId}/children`),
 
+  getDeliveryCoverageRegions: () =>
+    http.get<PublicRegion[]>('/regions/delivery-coverage'),
+
   listGroupOrders: () =>
     http.get<PublicGroupOrder[]>('/group-orders'),
 

@@ -27,6 +27,17 @@ export interface RegisterSupplierRequest {
   categoryIds: string[];
 }
 
+export interface RegisterDeliveryPersonRequest {
+  fullName: string;
+  email: string;
+  phone: string;
+  password: string;
+  vehicleType: string;
+  licenseInfo?: string;
+  baseDeliveryFee: number;
+  coverageRegionId?: string;
+}
+
 export interface AuthResponse {
   token: string;
   refreshToken: string;
@@ -34,7 +45,7 @@ export interface AuthResponse {
     id: string;
     name: string;
     email: string;
-    role: 'Buyer' | 'Supplier' | 'Admin';
+    role: 'Buyer' | 'Supplier' | 'Admin' | 'DeliveryPerson';
     avatar: string | null;
     preferredLang: string;
   };
@@ -46,6 +57,7 @@ export function syncPreferredLang(role: string | undefined, lang: string) {
   if (role === 'buyer') http.put('/buyer/profile', body).catch(() => {});
   else if (role === 'supplier') http.put('/supplier/profile', body).catch(() => {});
   else if (role === 'admin') http.patch('/admin/profile', body).catch(() => {});
+  else if (role === 'deliveryperson') http.put('/delivery-person/profile', body).catch(() => {});
   const stored = localStorage.getItem('user');
   if (stored) {
     try {
@@ -68,6 +80,9 @@ export const authService = {
 
   registerSupplier: (data: RegisterSupplierRequest) =>
     http.post<AuthResponse>('/auth/register/supplier', data),
+
+  registerDeliveryPerson: (data: RegisterDeliveryPersonRequest) =>
+    http.post<AuthResponse>('/auth/register/delivery-person', data),
 
   refresh: (refreshToken: string) =>
     http.post<AuthResponse>('/auth/refresh', { refreshToken }),

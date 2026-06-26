@@ -8,6 +8,7 @@ import { AuthLayout } from "./layouts/AuthLayout";
 import { BuyerLayout } from "./layouts/BuyerLayout";
 import { SupplierLayout } from "./layouts/SupplierLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
+import { DeliveryPersonLayout } from "./layouts/DeliveryPersonLayout";
 
 import { HomePage } from "./pages/HomePage";
 import { ErrorPage } from "./pages/ErrorPage";
@@ -39,6 +40,10 @@ import { AdminRegions } from "./pages/admin/Regions";
 import { AdminReports } from "./pages/admin/Reports";
 import { AdminSettings } from "./pages/admin/Settings";
 import { AdminProfile } from "./pages/admin/Profile";
+import { DeliveryPersonDashboard } from "./pages/delivery/Dashboard";
+import { DeliveryPersonDeliveries } from "./pages/delivery/Deliveries";
+import { DeliveryPersonDeliveryDetail } from "./pages/delivery/DeliveryDetail";
+import { DeliveryPersonProfile } from "./pages/delivery/Profile";
 
 function PrivateRoute({
   role,
@@ -55,7 +60,7 @@ function PrivateRoute({
       </div>
     );
   if (!user) return <Navigate to="/auth/login" />;
-  if (user.role !== role) return <Navigate to={`/${user.role}`} />;
+  if (user.role !== role) return <Navigate to={user.role === 'deliveryperson' ? '/delivery' : `/${user.role}`} />;
   return <>{children}</>;
 }
 
@@ -67,7 +72,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
         <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
-  if (user) return <Navigate to={`/${user.role}`} />;
+  if (user) return <Navigate to={user.role === 'deliveryperson' ? '/delivery' : `/${user.role}`} />;
   return <>{children}</>;
 }
 
@@ -163,6 +168,21 @@ function AppRoutes() {
           <Route path="reports" element={<AdminReports />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="profile" element={<AdminProfile />} />
+        </Route>
+
+        <Route
+          path="/delivery"
+          element={
+            <PrivateRoute role="deliveryperson">
+              <DeliveryPersonLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<DeliveryPersonDashboard />} />
+          <Route path="dashboard" element={<DeliveryPersonDashboard />} />
+          <Route path="deliveries" element={<DeliveryPersonDeliveries />} />
+          <Route path="deliveries/:id" element={<DeliveryPersonDeliveryDetail />} />
+          <Route path="profile" element={<DeliveryPersonProfile />} />
         </Route>
 
         <Route path="/error" element={<ErrorPage />} />
