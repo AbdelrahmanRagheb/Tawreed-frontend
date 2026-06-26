@@ -7,15 +7,10 @@ export function Navbar() {
   return (
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo & Brand */}
           <div className="flex items-center gap-2 cursor-pointer">
-            <div className="w-8 h-8 bg-indigo-600 flex items-center justify-center rounded-sm shrink-0">
-              <div className="w-4 h-4 border-2 border-white rotate-45"></div>
-            </div>
-            <span className="text-xl font-bold tracking-tight text-slate-800 hidden sm:block uppercase">
-              {t('appTitle')}
-            </span>
+            <img src="/tawreed-logo.png" alt="Tawreed" className="h-20 w-auto shrink-0" />
           </div>
 
           {/* Search Bar */}

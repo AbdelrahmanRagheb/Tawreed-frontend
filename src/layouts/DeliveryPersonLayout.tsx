@@ -24,11 +24,8 @@ export function DeliveryPersonLayout() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 sticky top-0 h-screen shrink-0">
-        <div className="h-16 flex items-center px-6 border-b border-slate-200">
-          <div className="w-8 h-8 bg-emerald-600 flex items-center justify-center rounded-sm shrink-0">
-            <Truck className="w-4 h-4 text-white" />
-          </div>
-          <span className="ms-2 text-xl font-bold tracking-tight text-slate-800 uppercase">{t('appTitle')}</span>
+        <div className="h-24 flex items-center px-6 border-b border-slate-200">
+          <img src="/tawreed-logo.png" alt="Tawreed" className="h-28 w-auto shrink-0" />
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {navItems.map((item) => (
@@ -68,12 +65,9 @@ export function DeliveryPersonLayout() {
       </aside>
 
       <main className="flex-1 pb-16 md:pb-0 overflow-y-auto h-screen relative">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 shrink-0 md:hidden">
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 shrink-0 md:hidden">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-emerald-600 flex items-center justify-center rounded-sm shrink-0">
-              <Truck className="w-3 h-3 text-white" />
-            </div>
-            <span className="text-lg font-bold tracking-tight text-slate-800 uppercase">{t('appTitle')}</span>
+            <img src="/tawreed-logo.png" alt="Tawreed" className="h-20 w-auto shrink-0" />
           </div>
           <div className="flex items-center gap-2">
             <NavLink to="/delivery/profile" className="text-slate-500 hover:text-emerald-600 transition-colors">

@@ -24,12 +24,7 @@ export function AuthLayout() {
           {/* Logo */}
           <Link to="/" className="block text-center mb-8">
             <div className="inline-flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <span className="text-white text-lg font-extrabold">ت</span>
-              </div>
-              <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                {t('appTitle')}
-              </span>
+              <img src="/tawreed-logo.png" alt="Tawreed" className="h-32 w-auto" />
             </div>
           </Link>
 

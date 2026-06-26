@@ -53,13 +53,10 @@ export function HomePage() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-18">
+          <div className="flex items-center justify-between h-28 lg:h-28">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-              <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:shadow-indigo-500/40 transition-shadow">
-                <span className="text-white text-lg font-extrabold" style={{ fontFamily: "'Cairo', sans-serif" }}>ت</span>
-              </div>
-              <span className="text-xl font-extrabold text-slate-900 tracking-tight">{t('appTitle')}</span>
+              <img src="/tawreed-logo.png" alt="Tawreed" className="h-28 w-auto" />
             </Link>
 
             {/* Desktop nav links */}
@@ -338,11 +335,7 @@ export function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-                <span className="text-white text-sm font-extrabold" style={{ fontFamily: "'Cairo', sans-serif" }}>ت</span>
-              </div>
-              <span className="text-base font-extrabold text-slate-900">{t('appTitle')}</span>
-              <span className="text-xs text-slate-400 ml-1">&middot; {t('appTagline')}</span>
+              <img src="/tawreed-logo.png" alt="Tawreed" className="h-20 w-auto" />
             </div>
 
             <div className="flex items-center gap-6 text-xs font-semibold text-slate-500">

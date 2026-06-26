@@ -604,9 +604,7 @@ export const translations = {
    pleaseSelectDeliveryPerson: { en: 'Please select a delivery person', ar: 'يرجى اختيار مندوب توصيل' },
    sendRequest: { en: 'Send Request', ar: 'إرسال طلب' },
    pendingRequests: { en: 'Pending Requests', ar: 'الطلبات المعلقة' },
-   declineReason: { en: 'Reason (optional):', ar: 'السبب (اختياري):' },
-   unitPrice: { en: 'Unit Price', ar: 'سعر الوحدة' },
-   total: { en: 'Total', ar: 'الإجمالي' },
+    declineReason: { en: 'Reason (optional):', ar: 'السبب (اختياري):' },
 };
 
 interface LanguageContextType {
