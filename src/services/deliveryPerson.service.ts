@@ -44,6 +44,8 @@ export interface DeliveryPersonItemDto {
   name: string;
   quantity: number;
   price: number;
+  unitPrice: number;
+  totalPrice: number;
 }
 
 export interface DeliveryPersonProfile {

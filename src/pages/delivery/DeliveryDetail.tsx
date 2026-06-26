@@ -117,7 +117,7 @@ export function DeliveryPersonDeliveryDetail() {
                 <User className="w-5 h-5 text-slate-400" />
                 <span className="font-semibold text-slate-800">{p.participantName}</span>
               </div>
-              {verifyMsg[p.invoiceId] === 'verified' ? (
+              {p.verificationCode && verifyMsg[p.invoiceId] === 'verified' ? (
                 <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
                   <CheckCircle className="w-4 h-4" /> {T('verified')}
                 </span>
@@ -141,7 +141,7 @@ export function DeliveryPersonDeliveryDetail() {
                     <tr className="text-slate-400 border-b">
                       <th className="text-left py-1 font-medium">{T('item')}</th>
                       <th className="text-right py-1 font-medium">{T('qty')}</th>
-                      <th className="text-right py-1 font-medium">{T('price')}</th>
+                      <th className="text-right py-1 font-medium">{T('total')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -149,7 +149,7 @@ export function DeliveryPersonDeliveryDetail() {
                       <tr key={idx} className="border-b border-slate-50">
                         <td className="py-1">{item.name}</td>
                         <td className="text-right py-1">{item.quantity}</td>
-                        <td className="text-right py-1">{item.price.toFixed(2)}</td>
+                        <td className="text-right py-1 font-semibold">{item.totalPrice.toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -157,7 +157,7 @@ export function DeliveryPersonDeliveryDetail() {
               </div>
             )}
 
-            {verifyMsg[p.invoiceId] !== 'verified' && (
+            {p.verificationCode && verifyMsg[p.invoiceId] !== 'verified' && (
               <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
                 <input
                   type="text"

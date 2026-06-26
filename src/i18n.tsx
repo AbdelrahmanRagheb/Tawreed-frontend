@@ -605,6 +605,8 @@ export const translations = {
    sendRequest: { en: 'Send Request', ar: 'إرسال طلب' },
    pendingRequests: { en: 'Pending Requests', ar: 'الطلبات المعلقة' },
    declineReason: { en: 'Reason (optional):', ar: 'السبب (اختياري):' },
+   unitPrice: { en: 'Unit Price', ar: 'سعر الوحدة' },
+   total: { en: 'Total', ar: 'الإجمالي' },
 };
 
 interface LanguageContextType {
