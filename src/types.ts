@@ -176,8 +176,6 @@ export interface SavedOrderDraft {
   region: string;
   deadlineDate: string;
   deadlineTime: string;
-  visibility: 'public' | 'private';
-  notes: string;
   items: DraftCartItem[];
   totalCost: number;
   totalQuantity: number;

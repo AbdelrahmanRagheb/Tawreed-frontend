@@ -28,7 +28,6 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../../i18n";
 import { useAuth } from "../../contexts/AuthContext";
-import type { BuyerAvailableDeliveryPerson } from "../../services/buyer.service";
 import {
   buyerService,
   type OrderDetailResponse,
@@ -73,18 +72,8 @@ function SupplierProfileModal({
                     {profile.supplierName}
                   </h2>
 
-                  <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200/80 text-xs font-semibold px-2 py-0.5 rounded-md">
-                    <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
-                    {profile.rating.toFixed(1)}
-                  </span>
                 </div>
 
-                {profile.address && (
-                  <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                    <span className="truncate">{profile.address}</span>
-                  </p>
-                )}
               </div>
             </div>
 
@@ -331,17 +320,19 @@ function EditProductsModal({
 }) {
   const { language, t } = useLanguage();
   const [editItems, setEditItems] = useState(
-    order.products.map((p) => {
-      const otherQty = p.currentQuantity;
-      const myQty = Math.max(0, p.targetQuantity - otherQty);
-      return {
-        productId: p.productId,
-        productName: p.productName,
-        categoryId: p.categoryId,
-        myQuantity: myQty,
-        othersQuantity: otherQty,
-      };
-    }),
+    order.products
+      .map((p) => {
+        const otherQty = p.currentQuantity;
+        const myQty = Math.max(0, p.targetQuantity - otherQty);
+        return {
+          productId: p.productId,
+          productName: p.productName,
+          categoryId: p.categoryId,
+          myQuantity: myQty,
+          othersQuantity: otherQty,
+        };
+      })
+      .filter((p) => p.myQuantity > 0),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -364,12 +355,23 @@ function EditProductsModal({
     setSaving(true);
     setError('');
     try {
-      const items = editItems
+      // Build items list: include creator's edited items + other participants' items unchanged
+      const myItems = editItems
         .filter((i) => i.myQuantity > 0)
         .map((i) => ({
           productId: i.productId,
           targetQuantity: i.myQuantity + i.othersQuantity,
         }));
+      const otherItems = order.products
+        .filter((p) => {
+          const myQty = Math.max(0, p.targetQuantity - p.currentQuantity);
+          return myQty === 0; // Only include products the creator didn't add
+        })
+        .map((p) => ({
+          productId: p.productId,
+          targetQuantity: p.targetQuantity,
+        }));
+      const items = [...myItems, ...otherItems];
       await buyerService.updateOrderItems(order.id, items);
       onSaved();
       onClose();
@@ -649,20 +651,7 @@ export function OrderDetail() {
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState("");
 
-  // Delivery preference inside assign modal
-  const [modalDeliveryPref, setModalDeliveryPref] = useState('None');
-  const [modalSelectedPerson, setModalSelectedPerson] = useState('');
-  const [modalDeliveryPersons, setModalDeliveryPersons] = useState<BuyerAvailableDeliveryPerson[]>([]);
-  const [loadingModalPersons, setLoadingModalPersons] = useState(false);
 
-  // Delivery preference state
-  const [deliveryPreference, setDeliveryPreference] = useState('');
-  const [settingPreference, setSettingPreference] = useState(false);
-  const [preferredDeliveryPersonId, setPreferredDeliveryPersonId] = useState('');
-  const [availableDeliveryPersons, setAvailableDeliveryPersons] = useState<any[]>([]);
-  const [loadingDeliveryPersons, setLoadingDeliveryPersons] = useState(false);
-  const [approvingFee, setApprovingFee] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
 
   const isCreator = user?.id === order?.creatorUserId;
   const deadlinePassed = order ? new Date(order.deadline) <= new Date() : false;
@@ -690,10 +679,6 @@ export function OrderDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (order?.deliveryPreference) setDeliveryPreference(order.deliveryPreference);
-  }, [order]);
-
-  useEffect(() => {
     if (id && order && isCreator) {
       setLoadingSuppliers(true);
       buyerService
@@ -703,29 +688,6 @@ export function OrderDetail() {
         .finally(() => setLoadingSuppliers(false));
     }
   }, [id, order, isCreator]);
-
-  // Reset modal state when assign modal opens/closes
-  useEffect(() => {
-    if (assignTarget) {
-      setModalDeliveryPref('None');
-      setModalSelectedPerson('');
-      setModalDeliveryPersons([]);
-    }
-  }, [assignTarget]);
-
-  // Fetch available delivery persons when "SystemDelivery" is selected in modal
-  useEffect(() => {
-    if (assignTarget && modalDeliveryPref === 'SystemDelivery') {
-      setLoadingModalPersons(true);
-      buyerService.getAvailableDeliveryPersons(id!)
-        .then(res => setModalDeliveryPersons(res.data))
-        .catch(() => setModalDeliveryPersons([]))
-        .finally(() => setLoadingModalPersons(false));
-    } else {
-      setModalDeliveryPersons([]);
-      setModalSelectedPerson('');
-    }
-  }, [modalDeliveryPref, assignTarget]);
 
   const handleSupplierClick = async (supplierId: string) => {
     if (!id || loadingProfile) return;
@@ -742,21 +704,10 @@ export function OrderDetail() {
 
   const handleAssign = async (supplierId: string) => {
     if (!id) return;
-    if (modalDeliveryPref === 'SystemDelivery' && !modalSelectedPerson) {
-      setAssignError(t("pleaseSelectDeliveryPerson" as any));
-      return;
-    }
     setAssigning(true);
     setAssignError("");
     try {
       await buyerService.assignSupplier(id, supplierId);
-      if (modalDeliveryPref !== 'None') {
-        const isSpecific = modalDeliveryPref === 'SystemDelivery' && !!modalSelectedPerson;
-        await buyerService.setDeliveryPreference(id, {
-          preference: isSpecific ? 'SpecificPerson' : modalDeliveryPref,
-          preferredDeliveryPersonId: isSpecific ? modalSelectedPerson : undefined,
-        });
-      }
       setAssignTarget(null);
       fetchOrder();
     } catch (err: any) {
@@ -791,62 +742,6 @@ export function OrderDetail() {
       setError(
         err?.response?.data?.error || err?.message || "Failed to leave order",
       );
-    }
-  };
-
-  // Delivery preference
-  const handleSetPreference = async () => {
-    if (!id) return;
-    setSettingPreference(true);
-    try {
-      await buyerService.setDeliveryPreference(id, {
-        preference: deliveryPreference,
-        preferredDeliveryPersonId: deliveryPreference === 'SpecificPerson' ? preferredDeliveryPersonId || undefined : undefined,
-      });
-      fetchOrder();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || "Failed to set preference");
-    } finally {
-      setSettingPreference(false);
-    }
-  };
-
-  const handleBrowseDeliveryPersons = async () => {
-    if (!id) return;
-    setLoadingDeliveryPersons(true);
-    try {
-      const res = await buyerService.getAvailableDeliveryPersons(id);
-      setAvailableDeliveryPersons(res.data);
-    } catch (err: any) {
-      setAvailableDeliveryPersons([]);
-    } finally {
-      setLoadingDeliveryPersons(false);
-    }
-  };
-
-  const handleApproveFee = async () => {
-    if (!id) return;
-    setApprovingFee(true);
-    try {
-      await buyerService.approveDeliveryFee(id, { isApproved: true });
-      fetchOrder();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || "Failed to approve");
-    } finally {
-      setApprovingFee(false);
-    }
-  };
-
-  const handleRejectFee = async () => {
-    if (!id) return;
-    setApprovingFee(true);
-    try {
-      await buyerService.approveDeliveryFee(id, { isApproved: false, reason: rejectReason || undefined });
-      fetchOrder();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || "Failed to reject");
-    } finally {
-      setApprovingFee(false);
     }
   };
 
@@ -1292,12 +1187,7 @@ export function OrderDetail() {
                             <h3 className="font-bold text-slate-900 text-sm leading-tight">
                               {supplier.supplierName}
                             </h3>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                              <span className="text-[11px] font-semibold text-amber-700">
-                                {supplier.rating.toFixed(1)}
-                              </span>
-                            </div>
+
                           </div>
                         </div>
                         <ChevronRight className="w-4 h-4 text-slate-300 mt-0.5" />
@@ -1348,20 +1238,6 @@ export function OrderDetail() {
               <div className="min-w-0">
                 <p className="text-sm font-bold text-slate-900">{t("pendingApproval" as any)}</p>
                 <p className="text-xs text-slate-500 mt-0.5">{t("supplierAssigned" as any)}</p>
-                {(order.deliveryPreference === 'SpecificPerson' || order.deliveryPreference === 'SystemDelivery') && (
-                  <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
-                    <Truck className="w-3 h-3" />
-                    {order.preferredDeliveryPersonName
-                      ? `${t('systemDelivery' as any)}: ${order.preferredDeliveryPersonName}`
-                      : t('systemDelivery' as any)}
-                  </span>
-                )}
-                {order.deliveryPreference === 'OwnDelivery' && (
-                  <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                    <Truck className="w-3 h-3" />
-                    {t('ownDelivery' as any)}
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -1376,53 +1252,7 @@ export function OrderDetail() {
               <div className="min-w-0">
                 <p className="text-sm font-bold text-slate-900">{t("supplierAccepted" as any)}</p>
                 <p className="text-xs text-slate-500 mt-0.5">{order.supplierName} — {t("locked" as any)}</p>
-                {(order.deliveryPreference === 'SpecificPerson' || order.deliveryPreference === 'SystemDelivery') && (
-                  <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
-                    <Truck className="w-3 h-3" />
-                    {order.preferredDeliveryPersonName
-                      ? `${t('systemDelivery' as any)}: ${order.preferredDeliveryPersonName}`
-                      : t('systemDelivery' as any)}
-                  </span>
-                )}
-                {order.deliveryPreference === 'OwnDelivery' && (
-                  <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                    <Truck className="w-3 h-3" />
-                    {t('ownDelivery' as any)}
-                  </span>
-                )}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Delivery Fee Approve/Reject ── */}
-        {isCreator && order.deliveryApprovalStatus === "Pending" && (
-          <div className="bg-white rounded-xl border border-amber-200 p-6 mt-4">
-            <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-amber-600" />
-              {t("deliveryFeeProposal" as any)}
-            </h3>
-            <div className="space-y-3">
-              <div className="bg-amber-50 rounded-lg p-4">
-                <p className="text-lg font-black text-slate-900">EGP {order.proposedDeliveryFee?.toLocaleString()}</p>
-                <p className="text-xs text-slate-500">{t("totalFee" as any)} — EGP {(order.proposedDeliveryFee! / Math.max(1, (order.participants?.length || 0) + 1)).toFixed(2)} {t("perParticipant" as any)}</p>
-              </div>
-              {order.assignedDeliveryPersonName && (
-                <p className="text-xs text-slate-600"><Truck className="w-3 h-3 inline mr-1" />{order.assignedDeliveryPersonName}</p>
-              )}
-              <div className="flex items-center gap-3">
-                <button onClick={handleApproveFee} disabled={approvingFee}
-                  className="flex-1 py-2.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 disabled:opacity-50">
-                  {approvingFee ? '...' : t("approve" as any)}
-                </button>
-                <button onClick={handleRejectFee} disabled={approvingFee}
-                  className="flex-1 py-2.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 disabled:opacity-50">
-                  {approvingFee ? '...' : t("reject" as any)}
-                </button>
-              </div>
-              <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg resize-none" rows={2}
-                placeholder={t("reason" as any)} />
             </div>
           </div>
         )}
@@ -1436,61 +1266,6 @@ export function OrderDetail() {
             <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
               <h3 className="text-sm font-bold text-slate-900">{t("assignSupplierConfirmTitle" as any)}</h3>
               <p className="text-xs text-slate-500 mt-2">{t("assignSupplierConfirmDesc" as any)}</p>
-
-              {/* ── Delivery Preference ── */}
-              <div className="mt-4 space-y-2">
-                <p className="text-xs font-semibold text-slate-700">{t("deliveryPreference" as any)}</p>
-                <label className="flex items-start gap-2 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50">
-                  <input type="radio" name="modalDeliveryPref" value="None" checked={modalDeliveryPref === 'None'}
-                    onChange={(e) => setModalDeliveryPref(e.target.value)} className="mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-800">{t("prefLetSupplierDecide" as any)}</p>
-                    <p className="text-[11px] text-slate-500">{t("prefLetSupplierDecideDesc" as any)}</p>
-                  </div>
-                </label>
-                <label className="flex items-start gap-2 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50">
-                  <input type="radio" name="modalDeliveryPref" value="SystemDelivery" checked={modalDeliveryPref === 'SystemDelivery'}
-                    onChange={(e) => setModalDeliveryPref(e.target.value)} className="mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-800">{t("prefSystemDelivery" as any)}</p>
-                    <p className="text-[11px] text-slate-500">{t("prefSystemDeliveryDesc" as any)}</p>
-                  </div>
-                </label>
-                {modalDeliveryPref === 'SystemDelivery' && (
-                  <div className="ml-5 pl-2 border-l-2 border-indigo-200 space-y-1 max-h-40 overflow-y-auto">
-                    {loadingModalPersons ? (
-                      <div className="flex items-center gap-2 py-2">
-                        <Loader2 className="w-3 h-3 animate-spin text-indigo-500" />
-                        <span className="text-[11px] text-slate-500">{t("loadingDeliveryPersons" as any)}</span>
-                      </div>
-                    ) : modalDeliveryPersons.length === 0 ? (
-                      <p className="text-[11px] text-slate-400 py-1">{t("noDeliveryPersonsAvailable" as any)}</p>
-                    ) : (
-                      modalDeliveryPersons.map((p) => (
-                        <label key={p.id} className="flex items-center gap-2 py-1.5 cursor-pointer">
-                          <input type="radio" name="modalSelectedPerson" value={p.id}
-                            checked={modalSelectedPerson === p.id}
-                            onChange={(e) => setModalSelectedPerson(e.target.value)} />
-                          <div>
-                            <p className="text-[11px] font-medium text-slate-800">{p.fullName}</p>
-                            <p className="text-[10px] text-slate-500">
-                              {t("deliveryFee" as any)}: {p.baseDeliveryFee} {p.vehicleType ? `· ${p.vehicleType}` : ''}
-                            </p>
-                          </div>
-                        </label>
-                      ))
-                    )}
-                  </div>
-                )}
-                <label className="flex items-start gap-2 p-2 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50">
-                  <input type="radio" name="modalDeliveryPref" value="OwnDelivery" checked={modalDeliveryPref === 'OwnDelivery'}
-                    onChange={(e) => setModalDeliveryPref(e.target.value)} className="mt-0.5" />
-                  <div>
-                    <p className="text-xs font-medium text-slate-800">{t("prefOwnDelivery" as any)}</p>
-                    <p className="text-[11px] text-slate-500">{t("prefOwnDeliveryDesc" as any)}</p>
-                  </div>
-                </label>
-              </div>
 
               <div className="flex items-center gap-3 mt-5">
                 <button

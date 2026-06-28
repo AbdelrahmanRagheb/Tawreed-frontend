@@ -8,7 +8,7 @@ import { cn } from '../../lib/utils';
 export function DeliveryPersonDeliveryDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const T = (key: string) => t(key as any);
   const [delivery, setDelivery] = useState<DeliveryPersonDeliveryDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,9 @@ export function DeliveryPersonDeliveryDetail() {
   useEffect(() => {
     if (!id) return;
     deliveryPersonService.getDeliveryDetail(id)
-      .then((res) => setDelivery(res.data))
+      .then((res) => {
+        setDelivery(res.data)
+      })
       .catch((err) => setError(err?.response?.data?.error || 'Failed to load'))
       .finally(() => setLoading(false));
   }, [id]);
@@ -128,7 +130,7 @@ export function DeliveryPersonDeliveryDetail() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-500 mb-3">
               <span className="flex items-center gap-1"><Phone className="w-4 h-4" /> {p.phone}</span>
-              <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {p.address}</span>
+              <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {language === 'ar' ? p.addressAr : p.addressEn}</span>
             </div>
 
             {p.items && p.items.length > 0 && (

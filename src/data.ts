@@ -1338,8 +1338,6 @@ export const mockDrafts: SavedOrderDraft[] = [
     region: "Mansoura",
     deadlineDate: "2026-06-20",
     deadlineTime: "18:00",
-    visibility: "public",
-    notes: "Delivery preferred between 8 AM and 12 PM.",
     items: [
       { productId: "p3", name: "Fresh Full Cream Milk (1L)", category: "Dairy", quantity: 60, price: 7.5, unit: "L", stock: 1500 },
       { productId: "p2", name: "Arabic Coffee - Premium Blend", category: "Beverages", quantity: 20, price: 85, unit: "KG", stock: 350 },
@@ -1357,8 +1355,6 @@ export const mockDrafts: SavedOrderDraft[] = [
     region: "Riyadh",
     deadlineDate: "2026-06-28",
     deadlineTime: "12:00",
-    visibility: "public",
-    notes: "",
     items: [
       { productId: "p4", name: "Extra Virgin Olive Oil (5L)", category: "Oils", quantity: 25, price: 145, unit: "TIN", stock: 80 },
     ],
@@ -1374,8 +1370,6 @@ export const mockDrafts: SavedOrderDraft[] = [
     region: "Jeddah",
     deadlineDate: "2026-07-05",
     deadlineTime: "16:00",
-    visibility: "private",
-    notes: "",
     items: [
       { productId: "p6", name: "Pure Natural Honey (3kg)", category: "Honey", quantity: 8, price: 195, unit: "JAR", stock: 40 },
       { productId: "p5", name: "Premium Medjool Dates (5kg)", category: "Dried Fruits", quantity: 12, price: 220, unit: "BOX", stock: 60 },
@@ -1395,8 +1389,6 @@ export const mockSavedTemplates: SavedOrderDraft[] = [
     region: "Mansoura",
     deadlineDate: "",
     deadlineTime: "",
-    visibility: "public",
-    notes: "Standard delivery instructions apply.",
     items: [
       { productId: "p3", name: "Fresh Full Cream Milk (1L)", category: "Dairy", quantity: 100, price: 7.5, unit: "L", stock: 1500 },
       { productId: "p1", name: "Premium Mixed Cheese Platter", category: "Dairy", quantity: 15, price: 180, unit: "KG", stock: 200 },
@@ -1413,8 +1405,6 @@ export const mockSavedTemplates: SavedOrderDraft[] = [
     region: "Cairo",
     deadlineDate: "",
     deadlineTime: "",
-    visibility: "public",
-    notes: "Needs to arrive before Ramadan.",
     items: [
       { productId: "p5", name: "Premium Medjool Dates (5kg)", category: "Dried Fruits", quantity: 30, price: 220, unit: "BOX", stock: 60 },
       { productId: "p6", name: "Pure Natural Honey (3kg)", category: "Honey", quantity: 20, price: 195, unit: "JAR", stock: 40 },
@@ -1433,8 +1423,6 @@ export const mockSavedTemplates: SavedOrderDraft[] = [
     region: "Alexandria",
     deadlineDate: "",
     deadlineTime: "",
-    visibility: "public",
-    notes: "",
     items: [
       { productId: "p7", name: "Premium Basmati Rice (25kg)", category: "Grains", quantity: 5, price: 165, unit: "BAG", stock: 300 },
       { productId: "p4", name: "Extra Virgin Olive Oil (5L)", category: "Oils", quantity: 10, price: 145, unit: "TIN", stock: 80 },

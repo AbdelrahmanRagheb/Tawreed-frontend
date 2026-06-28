@@ -24,7 +24,7 @@ export function BuyerProfile() {
   const [regions, setRegions] = useState<PublicRegion[]>([]);
   const [form, setForm] = useState({
     fullName: '', phone: '', businessName: '', businessType: '',
-    address: '', regionId: '',
+    regionId: '', taxId: '', commercialRegistrationNo: '',
   });
 
   useEffect(() => {
@@ -38,8 +38,9 @@ export function BuyerProfile() {
           phone: p.phone,
           businessName: p.businessName,
           businessType: p.businessType,
-          address: p.address || '',
           regionId: p.regionId,
+          taxId: p.taxId || '',
+          commercialRegistrationNo: p.commercialRegistrationNo || '',
         });
       })
       .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load profile'))
@@ -55,7 +56,8 @@ export function BuyerProfile() {
         phone: form.phone || undefined,
         businessName: form.businessName || undefined,
         businessType: form.businessType || undefined,
-        address: form.address || undefined,
+        taxId: form.taxId || undefined,
+        commercialRegistrationNo: form.commercialRegistrationNo || undefined,
         regionId: form.regionId || undefined,
       });
       setSuccessMsg(t('profileUpdated'));
@@ -77,8 +79,9 @@ export function BuyerProfile() {
       phone: profile.phone,
       businessName: profile.businessName,
       businessType: profile.businessType,
-      address: profile.address || '',
       regionId: profile.regionId,
+      taxId: profile.taxId || '',
+      commercialRegistrationNo: profile.commercialRegistrationNo || '',
     });
     setEditing(false);
     setError('');
@@ -203,6 +206,13 @@ export function BuyerProfile() {
                   </div>
                 </Section>
 
+                <Section title={t('registrationDocs')} icon={BadgePercent}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <Field label={t('taxId')} value={form.taxId} onChange={(v) => setForm((f) => ({ ...f, taxId: v }))} />
+                    <Field label={t('commercialRegistrationNo')} value={form.commercialRegistrationNo} onChange={(v) => setForm((f) => ({ ...f, commercialRegistrationNo: v }))} />
+                  </div>
+                </Section>
+
                 <Section title={t('location')} icon={MapPin}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
@@ -212,7 +222,6 @@ export function BuyerProfile() {
                         onChange={(id) => setForm((f) => ({ ...f, regionId: id }))}
                       />
                     </div>
-                    <Field label={t('address')} value={form.address} onChange={(v) => setForm((f) => ({ ...f, address: v }))} />
                   </div>
                 </Section>
               </div>
@@ -229,9 +238,13 @@ export function BuyerProfile() {
                   <InfoRow icon={BadgePercent} label={t('businessType')} value={profile?.businessType} />
                 </InfoCard>
 
+                <InfoCard title={t('registrationDocs')} icon={BadgePercent}>
+                  <InfoRow icon={BadgePercent} label={t('taxId')} value={profile?.taxId} />
+                  <InfoRow icon={BadgePercent} label={t('commercialRegistrationNo')} value={profile?.commercialRegistrationNo} />
+                </InfoCard>
+
                 <InfoCard title={t('location')} icon={MapPin}>
                   <InfoRow icon={MapPin} label={t('region')} value={regionName} />
-                  <InfoRow icon={MapPin} label={t('address')} value={profile?.address} />
                 </InfoCard>
 
                 <InfoCard title={t('accountSettings')} icon={Shield}>

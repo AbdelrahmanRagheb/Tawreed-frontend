@@ -7,7 +7,6 @@ export interface SupplierKpi {
   activeOrders: number;
   pendingDeliveries: number;
   totalProducts: number;
-  ratingAvg: number;
 }
 
 export interface ActiveGroupOrder {
@@ -59,12 +58,11 @@ export interface SupplierProfile {
   phone: string;
   companyName: string;
   taxId: string | null;
+  commercialRegistrationNo: string | null;
   avatar: string | null;
   joinedDate: string;
-  address: string;
   regionName: string;
   regionId: string;
-  ratingAvg: number;
   isApproved: boolean;
   preferredLang: string;
   categoryIds: string[];
@@ -74,6 +72,8 @@ export interface UpdateProfileRequest {
   fullName?: string;
   phone?: string;
   businessName?: string;
+  taxId?: string;
+  commercialRegistrationNo?: string;
   address?: string;
   regionId?: string;
   avatar?: string;
@@ -142,9 +142,6 @@ export interface SupplierOrderListItem {
   deadline: string;
   region: string;
   receivedAt: string;
-  deliveryPreference?: string;
-  preferredDeliveryPersonId?: string;
-  preferredDeliveryPersonName?: string;
   items: SupplierOrderItem[];
 }
 
@@ -185,16 +182,6 @@ export interface UpdateDeliveryStatusRequest {
   status: string;
   trackingNotes?: string;
   scheduledAt?: string;
-}
-
-export interface AvailableDeliveryPerson {
-  id: string;
-  fullName: string;
-  rating: number;
-  totalDeliveries: number;
-  baseDeliveryFee: number;
-  vehicleType?: string;
-  coverageRegion?: string;
 }
 
 export const supplierService = {
@@ -257,21 +244,6 @@ export const supplierService = {
 
   getCategoryIds: () =>
     http.get<string[]>('/supplier/profile/categories'),
-
-  browseAvailableDeliveryPersons: (orderId: string) =>
-    http.get<AvailableDeliveryPerson[]>(`/supplier/orders/${orderId}/available-delivery-persons`),
-
-  assignDeliveryPerson: (orderId: string, deliveryPersonId: string) =>
-    http.post(`/supplier/orders/${orderId}/assign-delivery-person/${deliveryPersonId}`),
-
-  requestDeliveryPerson: (orderId: string, deliveryPersonId: string) =>
-    http.post(`/supplier/orders/${orderId}/request-delivery/${deliveryPersonId}`),
-
-  proposeDeliveryFee: (orderId: string, data: { fee: number; notes?: string }) =>
-    http.post(`/supplier/orders/${orderId}/propose-delivery-fee`, data),
-
-  useOwnDelivery: (orderId: string) =>
-    http.post(`/supplier/orders/${orderId}/use-own-delivery`),
 
   cancelOrderFromSupplier: (orderId: string) =>
     http.post(`/supplier/orders/${orderId}/cancel`),

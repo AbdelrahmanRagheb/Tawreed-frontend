@@ -42,8 +42,6 @@ export interface AdminUser {
 export interface AdminUserDetail extends AdminUser {
   businessType: string | null;
   taxId: string | null;
-  address: string | null;
-  ratingAvg: number;
   emailVerified: boolean;
   phoneVerified: boolean;
   suspensionReason: string | null;
@@ -73,14 +71,12 @@ export interface AdminSupplier {
   status: string;
   region: string;
   joinedDate: string;
-  ratingAvg: number;
   totalProducts: number;
   isApproved: boolean;
 }
 
 export interface AdminSupplierDetail extends AdminSupplier {
   categoryNames: string[];
-  address: string;
   emailVerified: boolean;
   phoneVerified: boolean;
   lastLoginAt: string | null;

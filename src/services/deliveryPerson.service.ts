@@ -35,6 +35,8 @@ export interface DeliveryPersonParticipantDetailDto {
   email: string;
   phone: string;
   address: string;
+  addressAr: string;
+  addressEn: string;
   status: string;
   verificationCode?: string | null;
   items: DeliveryPersonItemDto[];

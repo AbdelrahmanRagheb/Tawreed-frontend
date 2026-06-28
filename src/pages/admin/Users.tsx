@@ -325,14 +325,7 @@ export function AdminUsers() {
                         <Shield className="w-4 h-4 text-slate-400 shrink-0" />
                         <span>{t('taxId')}: {selectedBuyer.taxId || '-'}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                        <span>{selectedBuyer.address || selectedBuyer.region || '-'}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Star className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>{t('rating')}: {selectedBuyer.ratingAvg > 0 ? selectedBuyer.ratingAvg.toFixed(1) : '-'}</span>
-                      </div>
+
                     </div>
                   </div>
 

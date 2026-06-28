@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Search, Plus, Minus, X, ShoppingCart, Package, MapPin,
-  Calendar, Clock, Users, Eye, TrendingDown, CheckCircle,
-  Save, Send, FileText, Filter, ChevronDown, AlertTriangle,
+  Users, Eye, TrendingDown, CheckCircle,
+  Save, Send, FileText, Filter, ChevronRight, AlertTriangle,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
-import { publicService, type PublicProduct, type PublicCategory } from '../../services/public.service';
+import { publicService, type PublicProduct, type PublicCategory, type PublicRegion } from '../../services/public.service';
 import { buyerService, type CreateOrderRequest, type BuyerOrderListItem } from '../../services/buyer.service';
 import type { SavedOrderDraft } from '../../types';
 
@@ -42,17 +42,17 @@ export function CreateOrder() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<PublicProduct[]>([]);
   const [categories, setCategories] = useState<PublicCategory[]>([]);
-  const [buyerRegionName, setBuyerRegionName] = useState('');
-  const [buyerRegionId, setBuyerRegionId] = useState('');
+  const [groupRegionId, setGroupRegionId] = useState('');
+  const [groupRegionNameAr, setGroupRegionNameAr] = useState('');
+  const [groupRegionNameEn, setGroupRegionNameEn] = useState('');
+  const [regionChildren, setRegionChildren] = useState<PublicRegion[]>([]);
+  const [showRegionModal, setShowRegionModal] = useState(false);
+  const [loadingChildren, setLoadingChildren] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [orderName, setOrderName] = useState('');
   const [orderDescription, setOrderDescription] = useState('');
-  const [deadlineDate, setDeadlineDate] = useState('');
-  const [deadlineTime, setDeadlineTime] = useState('');
-  const [visibility, setVisibility] = useState<'public' | 'private'>('public');
-  const [notes, setNotes] = useState('');
   const [publishing, setPublishing] = useState(false);
 
   const [modalProduct, setModalProduct] = useState<SelectedProduct | null>(null);
@@ -69,19 +69,64 @@ export function CreateOrder() {
       .then(([prodRes, catRes, profileRes]) => {
         setProducts(prodRes.data);
         setCategories(catRes.data);
-        setBuyerRegionName(profileRes.data.regionName);
-        setBuyerRegionId(profileRes.data.regionId);
+
+        // Debug: log the full profile response to inspect group region fields
+        console.log('[CreateOrder] Buyer profile response:', profileRes.data);
+        console.log('[CreateOrder] groupRegionId:', profileRes.data.groupRegionId);
+        console.log('[CreateOrder] groupRegionNameAr:', profileRes.data.groupRegionNameAr);
+        console.log('[CreateOrder] groupRegionNameEn:', profileRes.data.groupRegionNameEn);
+        console.log('[CreateOrder] regionId (raw):', profileRes.data.regionId);
+        console.log('[CreateOrder] regionName (raw):', profileRes.data.regionName);
+
+        // Fallback allowed types (must match admin GroupRegionTypes setting)
+        // API returns type as enum integer: 0=Country, 1=Governorate, 2=Markaz, 3=Qism,
+        // 4=Madina, 5=Hayy, 6=PoliceDepartment, 7=Region, ...
+        const allowedGroupTypeValues = new Set([1, 2, 3, 6, 7]); // Governorate, Markaz, Qism, PoliceDepartment, Region
+
+        // Use the group region resolved by the backend if available
+        if (profileRes.data.groupRegionId) {
+          setGroupRegionId(profileRes.data.groupRegionId);
+          setGroupRegionNameAr(profileRes.data.groupRegionNameAr);
+          setGroupRegionNameEn(profileRes.data.groupRegionNameEn);
+        } else {
+          // Backend didn't resolve — walk up on the frontend
+          (async () => {
+            let curId: string | null = profileRes.data.regionId;
+            const maxDepth = 10;
+            let depth = 0;
+            // First, skip the buyer's own region by going to parent
+            try {
+              const selfReg = (await publicService.getRegion(curId)).data;
+              curId = selfReg.parentId;
+            } catch { return; }
+            // Now walk up until we find a matching type
+            while (curId && depth < maxDepth) {
+              try {
+                const reg = (await publicService.getRegion(curId)).data;
+                const typeVal = typeof reg.type === 'number' ? reg.type : (reg.type ? parseInt(reg.type, 10) : NaN);
+                console.log(`[CreateOrder] Walking up: id=${reg.id}, nameAr=${reg.nameAr}, nameEn=${reg.nameEn}, type=${reg.type} (${typeVal})`);
+                if (!isNaN(typeVal) && allowedGroupTypeValues.has(typeVal)) {
+                  setGroupRegionId(reg.id);
+                  setGroupRegionNameAr(reg.nameAr);
+                  setGroupRegionNameEn(reg.nameEn);
+                  console.log(`[CreateOrder] Found group region: ${reg.nameAr} / ${reg.nameEn} (type=${reg.type})`);
+                  return;
+                }
+                curId = reg.parentId;
+                depth++;
+              } catch { break; }
+            }
+            // Fallback: show raw region name
+            setGroupRegionNameAr(profileRes.data.regionName);
+            setGroupRegionNameEn(profileRes.data.regionName);
+          })();
+        }
 
         if (resumeDraft) {
           buyerService.getOrderDetail(resumeDraft.id).then((detailRes) => {
             const detail = detailRes.data;
             setOrderName(detail.title);
             setOrderDescription(detail.description || '');
-            if (detail.deadline) {
-              const d = new Date(detail.deadline);
-              setDeadlineDate(d.toISOString().split('T')[0]);
-              setDeadlineTime(d.toTimeString().slice(0, 5));
-            }
             const items: CartItem[] = detail.products.map((p) => {
               const product = prodRes.data.find((x) => x.id === p.productId);
               return {
@@ -146,10 +191,27 @@ export function CreateOrder() {
 
   const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalCost = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const estimatedSavings = Math.round(totalCost * 0.15);
-  const potentialSavings = Math.round(totalCost * 0.25);
 
-  const isValid = orderName.trim() && deadlineDate && cart.length > 0;
+
+  const isValid = orderName.trim() && cart.length > 0;
+
+  const groupRegionName = language === 'ar' ? groupRegionNameAr : groupRegionNameEn;
+
+  const handleRegionClick = async () => {
+    if (!groupRegionId) return;
+    setShowRegionModal(true);
+    if (regionChildren.length === 0) {
+      setLoadingChildren(true);
+      try {
+        const res = await publicService.getRegionChildren(groupRegionId);
+        setRegionChildren(res.data);
+      } catch {
+        // No children available
+      } finally {
+        setLoadingChildren(false);
+      }
+    }
+  };
 
   const handlePublish = async () => {
     if (!isValid) return;
@@ -158,7 +220,6 @@ export function CreateOrder() {
       const data: CreateOrderRequest = {
         title: orderName,
         description: orderDescription || undefined,
-        deadline: `${deadlineDate}T${deadlineTime || '23:59'}:00`,
         items: cart.map((item) => ({
           productId: item.productId,
           targetQuantity: item.quantity,
@@ -178,7 +239,6 @@ export function CreateOrder() {
       const data: CreateOrderRequest = {
         title: orderName || 'Untitled Draft',
         description: orderDescription || undefined,
-        deadline: `${deadlineDate}T${deadlineTime || '23:59'}:00`,
         items: cart.map((item) => ({
           productId: item.productId,
           targetQuantity: item.quantity,
@@ -250,10 +310,22 @@ export function CreateOrder() {
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               {t('deliveryRegion')}
             </label>
-            <div className="flex items-center gap-2 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-500">
-              <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-              {buyerRegionName ? (language === 'ar' ? buyerRegionName : buyerRegionName) : t('loading')}
-            </div>
+            <button
+              type="button"
+              onClick={handleRegionClick}
+              className="w-full flex items-center justify-between gap-2 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 hover:bg-indigo-50 hover:border-indigo-200 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+                <span className="text-slate-700 font-medium truncate">
+                  {groupRegionName || t('loading')}
+                </span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+            </button>
+            <p className="text-[10px] text-slate-400 mt-1">
+              {language === 'ar' ? 'اضغط لعرض المناطق المشمولة' : 'Click to view included areas'}
+            </p>
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -266,63 +338,9 @@ export function CreateOrder() {
               placeholder={t('descriptionPlaceholder')}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              {t('participationDeadline')} <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="date"
-                  value={deadlineDate}
-                  onChange={(e) => setDeadlineDate(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div className="relative">
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="time"
-                  value={deadlineTime}
-                  onChange={(e) => setDeadlineTime(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              {t('visibility')}
-            </label>
-            <div className="flex items-center gap-4 pt-1">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="public"
-                  checked={visibility === 'public'}
-                  onChange={() => setVisibility('public')}
-                  className="w-4 h-4 text-indigo-600"
-                />
-                <span className="text-sm text-slate-700">{t('public')}</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="private"
-                  checked={visibility === 'private'}
-                  onChange={() => setVisibility('private')}
-                  className="w-4 h-4 text-indigo-600"
-                />
-                <span className="text-sm text-slate-700">{t('private')}</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
+	          </div>
+	        </div>
+	      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 space-y-4">
@@ -366,15 +384,8 @@ export function CreateOrder() {
                     <span>{t('category')}: {product.categoryName}</span>
                   </div>
                   <div className="flex items-center justify-between mt-2">
-                    <div>
-                      <p className="text-lg font-bold text-slate-900">{product.price} EGP</p>
-                      <p className="text-[11px] text-slate-500">{language === 'en' ? '/ unit' : '/ وحدة'}</p>
-                    </div>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                      product.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-                    }`}>
-                      {product.stock > 0 ? t('inStock') : t('outOfStock')}
-                    </span>
+                  
+                  
                   </div>
                   <button
                     onClick={() => {
@@ -468,7 +479,7 @@ export function CreateOrder() {
 
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('orderStatistics')}</h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-[11px] text-slate-500">{t('products')}</p>
                   <p className="text-lg font-bold text-slate-900">{cart.length}</p>
@@ -477,50 +488,18 @@ export function CreateOrder() {
                   <p className="text-[11px] text-slate-500">{t('totalQuantity')}</p>
                   <p className="text-lg font-bold text-slate-900">{totalQuantity}</p>
                 </div>
-                <div>
-                  <p className="text-[11px] text-slate-500">{t('estimatedCost')}</p>
-                  <p className="text-lg font-bold text-slate-900">{totalCost.toLocaleString()} EGP</p>
-                </div>
               </div>
             </div>
 
-            {cart.length > 0 && (
-              <div className="bg-gradient-to-r from-emerald-50 to-emerald-50/30 rounded-xl border border-emerald-200 p-5">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <TrendingDown className="w-3.5 h-3.5 text-emerald-600" />
-                  {t('estimatedSavings')}
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-[11px] text-slate-500">{t('currentSavings')}</p>
-                    <p className="text-lg font-bold text-emerald-600">{estimatedSavings.toLocaleString()} EGP</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] text-slate-500">{t('potentialSavings')}</p>
-                    <p className="text-lg font-bold text-emerald-700">{potentialSavings.toLocaleString()} EGP</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            
 
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('additionalNotes')}</h3>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder={t('notesPlaceholder')}
-                rows={3}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-              />
-            </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('reviewChecklist')}</h3>
               <div className="space-y-2">
                 {[
                   { label: t('orderName'), valid: !!orderName.trim() },
-                  { label: t('region'), valid: !!buyerRegionName },
-                  { label: t('deadline'), valid: !!deadlineDate },
+                  { label: t('region'), valid: !!groupRegionName },
                   { label: t('productsAdded'), valid: cart.length > 0 },
                   { label: t('quantitiesValid'), valid: cart.every((item) => item.quantity > 0) },
                 ].map((item) => (
@@ -532,26 +511,7 @@ export function CreateOrder() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <button
-                onClick={handlePublish}
-                disabled={!isValid || publishing}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Send className="w-4 h-4" />
-                {publishing ? t('publishing') : t('publishGroupOrder')}
-              </button>
-              <div className="flex gap-2 mt-2">
-                <button onClick={saveAsDraft} className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors">
-                  <Save className="w-3.5 h-3.5" />
-                  {t('saveDraft')}
-                </button>
-                <button className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors">
-                  <Eye className="w-3.5 h-3.5" />
-                  {t('preview')}
-                </button>
-              </div>
-            </div>
+            
           </div>
         </div>
       </div>
@@ -620,6 +580,70 @@ export function CreateOrder() {
                 {t('addToOrder')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Region Children Modal */}
+      {showRegionModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setShowRegionModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-lg mx-4 shadow-xl border border-slate-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-lg font-bold text-slate-900">{groupRegionName}</h2>
+              </div>
+              <button
+                onClick={() => setShowRegionModal(false)}
+                className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                {language === 'ar' ? 'المناطق المشمولة' : 'Areas Included'}
+              </p>
+
+              {loadingChildren ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-6 h-6 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : regionChildren.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {regionChildren.map((child) => (
+                    <span
+                      key={child.id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100"
+                    >
+                      <MapPin className="w-3 h-3" />
+                      {language === 'ar' ? child.nameAr : child.nameEn}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-8">
+                  {language === 'ar' ? 'لا توجد مناطق فرعية' : 'No sub-areas found'}
+                </p>
+              )}
+
+              <p className="text-[11px] text-slate-400 mt-4">
+                {language === 'ar'
+                  ? 'جميع المناطق المذكورة أعلاه مشمولة في هذا الطلب الجماعي'
+                  : 'All areas listed above are included in this group order'}
+              </p>
+            </div>
+
+           
           </div>
         </div>
       )}

@@ -28,10 +28,12 @@ export function Register() {
 
   const [businessName, setBusinessName] = useState('');
   const [businessType, setBusinessType] = useState('');
-  const [address, setAddress] = useState('');
+  const [buyerTaxId, setBuyerTaxId] = useState('');
+  const [buyerCommercialRegNo, setBuyerCommercialRegNo] = useState('');
 
   const [companyName, setCompanyName] = useState('');
   const [taxId, setTaxId] = useState('');
+  const [supplierCommercialRegNo, setSupplierCommercialRegNo] = useState('');
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
 
   // Delivery person fields
@@ -60,7 +62,9 @@ export function Register() {
       if (role === 'Buyer') {
         const res = await authService.registerBuyer({
           fullName: fullName.trim(), email: email.trim(), phone, password,
-          businessName, businessType, regionId, address,
+          businessName, businessType, regionId,
+          taxId: buyerTaxId || undefined,
+          commercialRegistrationNo: buyerCommercialRegNo || undefined,
         });
         const { token, refreshToken, user } = res.data;
         localStorage.setItem('token', token);
@@ -80,7 +84,8 @@ export function Register() {
       } else {
         const res = await authService.registerSupplier({
           fullName: fullName.trim(), email: email.trim(), phone, password,
-          companyName, taxId, regionId, categoryIds,
+          companyName, taxId, commercialRegistrationNo: supplierCommercialRegNo || undefined,
+          regionId, categoryIds,
         });
         const { token, refreshToken, user } = res.data;
         localStorage.setItem('token', token);
@@ -177,8 +182,13 @@ export function Register() {
                 </select>
               </div>
               <div className="relative">
-                <input type="text" value={address} onChange={(e) => setAddress(e.target.value)}
-                  placeholder={t('address')}
+                <input type="text" value={buyerTaxId} onChange={(e) => setBuyerTaxId(e.target.value)}
+                  placeholder={t('taxId')}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+              </div>
+              <div className="relative">
+                <input type="text" value={buyerCommercialRegNo} onChange={(e) => setBuyerCommercialRegNo(e.target.value)}
+                  placeholder={t('commercialRegistrationNo')}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
               </div>
             </>
@@ -195,6 +205,11 @@ export function Register() {
               <div className="sm:col-span-2 relative">
                 <input type="text" value={taxId} onChange={(e) => setTaxId(e.target.value)}
                   placeholder={t('taxId')}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+              </div>
+              <div className="sm:col-span-2 relative">
+                <input type="text" value={supplierCommercialRegNo} onChange={(e) => setSupplierCommercialRegNo(e.target.value)}
+                  placeholder={t('commercialRegistrationNo')}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
               </div>
               <div className="sm:col-span-2">

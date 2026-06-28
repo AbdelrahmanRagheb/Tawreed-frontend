@@ -13,7 +13,8 @@ export interface RegisterBuyerRequest {
   businessName: string;
   businessType: string;
   regionId: string;
-  address: string;
+  taxId?: string;
+  commercialRegistrationNo?: string;
 }
 
 export interface RegisterSupplierRequest {
@@ -23,6 +24,7 @@ export interface RegisterSupplierRequest {
   password: string;
   companyName: string;
   taxId: string;
+  commercialRegistrationNo?: string;
   regionId: string;
   categoryIds: string[];
 }

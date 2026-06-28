@@ -24,7 +24,7 @@ export function SupplierProfile() {
   const [regions, setRegions] = useState<PublicRegion[]>([]);
   const [form, setForm] = useState({
     fullName: '', phone: '', companyName: '',
-    address: '', regionId: '',
+    regionId: '', taxId: '', commercialRegistrationNo: '',
   });
 
   useEffect(() => {
@@ -37,8 +37,9 @@ export function SupplierProfile() {
           fullName: p.name,
           phone: p.phone,
           companyName: p.companyName,
-          address: p.address || '',
           regionId: p.regionId,
+          taxId: p.taxId || '',
+          commercialRegistrationNo: p.commercialRegistrationNo || '',
         });
       })
       .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load profile'))
@@ -53,7 +54,8 @@ export function SupplierProfile() {
         fullName: form.fullName || undefined,
         phone: form.phone || undefined,
         businessName: form.companyName || undefined,
-        address: form.address || undefined,
+        taxId: form.taxId || undefined,
+        commercialRegistrationNo: form.commercialRegistrationNo || undefined,
         regionId: form.regionId || undefined,
       });
       setSuccessMsg(t('profileUpdated'));
@@ -74,8 +76,9 @@ export function SupplierProfile() {
       fullName: profile.name,
       phone: profile.phone,
       companyName: profile.companyName,
-      address: profile.address || '',
       regionId: profile.regionId,
+      taxId: profile.taxId || '',
+      commercialRegistrationNo: profile.commercialRegistrationNo || '',
     });
     setEditing(false);
     setError('');
@@ -179,12 +182,6 @@ export function SupplierProfile() {
                     <Shield className="w-3 h-3" />
                     {user?.role || '-'}
                   </span>
-                  {profile?.ratingAvg ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100">
-                      <Star className="w-3 h-3 text-amber-500" />
-                      {profile.ratingAvg.toFixed(1)}
-                    </span>
-                  ) : null}
                 </div>
               </div>
             </div>
@@ -202,7 +199,8 @@ export function SupplierProfile() {
                 <Section title={t('businessInfo')} icon={Briefcase}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <Field label={t('companyName')} value={form.companyName} onChange={(v) => setForm((f) => ({ ...f, companyName: v }))} />
-                    <Field label={t('taxId')} value={profile?.taxId || ''} disabled />
+                    <Field label={t('taxId')} value={form.taxId} onChange={(v) => setForm((f) => ({ ...f, taxId: v }))} />
+                    <Field label={t('commercialRegistrationNo')} value={form.commercialRegistrationNo} onChange={(v) => setForm((f) => ({ ...f, commercialRegistrationNo: v }))} />
                   </div>
                 </Section>
 
@@ -215,7 +213,6 @@ export function SupplierProfile() {
                         onChange={(id) => setForm((f) => ({ ...f, regionId: id }))}
                       />
                     </div>
-                    <Field label={t('address')} value={form.address} onChange={(v) => setForm((f) => ({ ...f, address: v }))} />
                   </div>
                 </Section>
               </div>
@@ -230,11 +227,11 @@ export function SupplierProfile() {
                 <InfoCard title={t('businessInfo')} icon={Briefcase}>
                   <InfoRow icon={Building2} label={t('companyName')} value={profile?.companyName} />
                   <InfoRow icon={BadgePercent} label={t('taxId')} value={profile?.taxId} />
+                  <InfoRow icon={BadgePercent} label={t('commercialRegistrationNo')} value={profile?.commercialRegistrationNo} />
                 </InfoCard>
 
                 <InfoCard title={t('location')} icon={MapPin}>
                   <InfoRow icon={MapPin} label={t('region')} value={regionName} />
-                  <InfoRow icon={MapPin} label={t('address')} value={profile?.address} />
                 </InfoCard>
 
                 <InfoCard title={t('accountSettings')} icon={Shield}>

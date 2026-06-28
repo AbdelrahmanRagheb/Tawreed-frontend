@@ -127,7 +127,6 @@ export interface OrderDetailResponse {
   supplierName: string;
   supplierId: string;
   deliveryPreference?: string;
-  preferredDeliveryPersonId?: string;
   preferredDeliveryPersonName?: string;
   proposedDeliveryFee?: number;
   deliveryApprovalStatus?: string;
@@ -141,7 +140,7 @@ export interface OrderDetailResponse {
 export interface CreateOrderRequest {
   title: string;
   description?: string;
-  deadline: string;
+  deadline?: string;
   items: { productId: string; targetQuantity: number }[];
 }
 
@@ -187,12 +186,15 @@ export interface BuyerProfile {
   businessName: string;
   businessType: string;
   taxId: string | null;
+  commercialRegistrationNo: string | null;
   avatar: string | null;
   joinedDate: string;
-  address: string | null;
   regionName: string;
   regionId: string;
   preferredLang: string;
+  groupRegionId: string | null;
+  groupRegionNameAr: string;
+  groupRegionNameEn: string;
 }
 
 export interface BuyerUpdateProfileRequest {
@@ -201,6 +203,7 @@ export interface BuyerUpdateProfileRequest {
   businessName?: string;
   businessType?: string;
   taxId?: string;
+  commercialRegistrationNo?: string;
   address?: string;
   regionId?: string;
   avatar?: string;
@@ -210,7 +213,6 @@ export interface BuyerUpdateProfileRequest {
 export interface EligibleSupplier {
   supplierId: string;
   supplierName: string;
-  rating: number;
   totalEstimatedCost: number;
 }
 
@@ -239,8 +241,6 @@ export interface SupplierPublicProduct {
 export interface SupplierPublicProfile {
   supplierId: string;
   supplierName: string;
-  rating: number;
-  address: string | null;
   categories: string[];
   products: SupplierPublicProduct[];
 }
@@ -299,27 +299,6 @@ export const buyerService = {
   getMyDeliveries: () =>
     http.get<BuyerDeliveryDto[]>('/buyer/deliveries'),
 
-  setDeliveryPreference: (orderId: string, data: { preference: string; preferredDeliveryPersonId?: string }) =>
-    http.put(`/buyer/orders/${orderId}/delivery-preference`, data),
-
-  approveDeliveryFee: (orderId: string, data: { isApproved: boolean; reason?: string }) =>
-    http.post(`/buyer/orders/${orderId}/approve-delivery`, data),
-
-  getAvailableDeliveryPersons: (orderId: string) =>
-    http.get<BuyerAvailableDeliveryPerson[]>(`/buyer/orders/${orderId}/available-delivery-persons`),
 };
 
-export interface BuyerAvailableDeliveryPerson {
-  id: string;
-  userId: string;
-  fullName: string;
-  email: string;
-  phone?: string;
-  vehicleType: string;
-  baseDeliveryFee: number;
-  rating: number;
-  totalDeliveries: number;
-  isActive: boolean;
-  coverageRegionId?: string;
-  coverageRegionName?: string;
-}
+
