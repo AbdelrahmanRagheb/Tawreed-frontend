@@ -127,6 +127,52 @@ export interface AdminOrderListItem {
   participants: number;
 }
 
+export interface AdminOrderItem {
+  productId: string;
+  productName: string;
+  marketPrice: number | null;
+  quantity: number;
+  targetQuantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface AdminOrderParticipantItem {
+  productId: string;
+  quantity: number;
+}
+
+export interface AdminOrderParticipant {
+  id: string;
+  name: string;
+  joinedAt: string;
+  items: AdminOrderParticipantItem[];
+}
+
+export interface AdminOrderTimelineEvent {
+  eventType: string;
+  notesEn: string;
+  notesAr: string;
+  actorName: string;
+  createdAt: string;
+}
+
+export interface AdminOrderDetailResponse {
+  id: string;
+  title: string;
+  status: string;
+  buyer: { id: string; name: string; company: string; email: string; phone: string };
+  supplier: { id: string; name: string; companyName: string } | null;
+  regionEn: string;
+  regionAr: string;
+  createdAt: string;
+  deadline: string;
+  totalOrderValue: number;
+  items: AdminOrderItem[];
+  participants: AdminOrderParticipant[];
+  timeline: AdminOrderTimelineEvent[];
+}
+
 export interface AdminCategory {
   id: string;
   nameAr: string;
@@ -234,7 +280,7 @@ export const adminService = {
     http.get<PaginatedResponse<AdminOrderListItem>>('/admin/orders', { params }),
 
   getOrderDetail: (orderId: string) =>
-    http.get(`/admin/orders/${orderId}`),
+    http.get<AdminOrderDetailResponse>(`/admin/orders/${orderId}`),
 
   forceCloseOrder: (orderId: string, reason: string) =>
     http.post(`/admin/orders/${orderId}/force-close`, reason),
@@ -298,4 +344,16 @@ export const adminService = {
 
   setGroupRegionTypes: (types: string[]) =>
     http.put('/admin/settings/group-region-types', types),
+
+  getDefaultDeadlineDays: () =>
+    http.get<{ days: number }>('/admin/settings/default-deadline-days'),
+
+  setDefaultDeadlineDays: (days: number) =>
+    http.put('/admin/settings/default-deadline-days', { days }),
+
+  getUrgentDeadlineHours: () =>
+    http.get<{ hours: number }>('/admin/settings/urgent-deadline-hours'),
+
+  setUrgentDeadlineHours: (hours: number) =>
+    http.put('/admin/settings/urgent-deadline-hours', { hours }),
 };

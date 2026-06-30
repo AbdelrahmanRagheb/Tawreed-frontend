@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Truck, Package, Clock, CheckCircle, XCircle, AlertCircle, Info } from "lucide-react";
-import { useLanguage } from "../../i18n";
+import { useLanguage, toArabicNumeral } from "../../i18n";
 import { useAuth } from "../../contexts/AuthContext";
 import { buyerService, type BuyerDeliveryDto } from "../../services/buyer.service";
 
@@ -49,7 +49,7 @@ export function BuyerDeliveries() {
     <div className="p-4 md:p-8 max-w-4xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900">{t("myDeliveries")}</h1>
-        <p className="text-sm text-slate-500 mt-1">{deliveries.length} {t("deliveries")}</p>
+        <p className="text-sm text-slate-500 mt-1">{toArabicNumeral(String(deliveries.length), language)} {t("deliveries")}</p>
       </div>
 
       {deliveries.length === 0 && (
@@ -97,7 +97,7 @@ export function BuyerDeliveries() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-500">{t("verificationCode")}</span>
                   <span className="text-sm font-bold text-indigo-600 tracking-widest">
-                    {delivery.verificationCode}
+                    {toArabicNumeral(delivery.verificationCode, language)}
                   </span>
                 </div>
               </div>
@@ -108,7 +108,7 @@ export function BuyerDeliveries() {
                   {delivery.items.map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between text-xs">
                       <span className="text-slate-700">{item.productName}</span>
-                      <span className="font-medium text-slate-900">×{item.quantity}</span>
+                      <span className="font-medium text-slate-900">×{toArabicNumeral(String(item.quantity), language)}</span>
                     </div>
                   ))}
                 </div>

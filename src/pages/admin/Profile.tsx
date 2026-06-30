@@ -5,7 +5,7 @@ import {
   Globe, Clock
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { adminService, type AdminProfile } from '../../services/admin.service';
 import { useNavigate } from 'react-router-dom';
 
@@ -181,14 +181,14 @@ export function AdminProfile() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <InfoCard title={t('personalInfo')} icon={User}>
                   <InfoRow icon={Mail} label="Email" value={profile?.email} />
-                  <InfoRow icon={Phone} label={t('phone')} value={profile?.phone} />
-                  <InfoRow icon={Calendar} label={t('memberSince')} value={profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-'} />
+                  <InfoRow icon={Phone} label={t('phone')} value={toArabicNumeral(profile?.phone || '', language)} />
+                  <InfoRow icon={Calendar} label={t('memberSince')} value={toArabicNumeral(profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-', language)} />
                 </InfoCard>
 
                 <InfoCard title={t('accountSettings')} icon={Shield}>
                   <InfoRow icon={Shield} label={t('role')} value={profile?.role || '-'} />
                   <InfoRow icon={Globe} label={t('language')} value={(profile?.preferredLang || 'en').toUpperCase()} />
-                  <InfoRow icon={Clock} label={t('lastLogin')} value={profile?.lastLoginAt ? new Date(profile.lastLoginAt).toLocaleDateString() : '-'} />
+                  <InfoRow icon={Clock} label={t('lastLogin')} value={toArabicNumeral(profile?.lastLoginAt ? new Date(profile.lastLoginAt).toLocaleDateString() : '-', language)} />
                 </InfoCard>
               </div>
             )}

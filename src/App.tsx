@@ -4,7 +4,6 @@ import { useLanguage } from "./i18n";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import type { Language } from "./i18n";
 
-import { AuthLayout } from "./layouts/AuthLayout";
 import { BuyerLayout } from "./layouts/BuyerLayout";
 import { SupplierLayout } from "./layouts/SupplierLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
@@ -94,25 +93,23 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<HomePage />} />
 
-        <Route path="/auth" element={<AuthLayout />}>
-          <Route index element={<Navigate to="login" replace />} />
-          <Route
-            path="login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="register"
-            element={
-              <PublicRoute>
-                <Register />
-              </PublicRoute>
-            }
-          />
-        </Route>
+        <Route
+          path="/auth/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/auth/register"
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
+        <Route path="/auth" element={<Navigate to="login" replace />} />
 
         <Route
           path="/buyer"

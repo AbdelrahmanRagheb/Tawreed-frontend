@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Tags, Search, ToggleRight, ToggleLeft, TrendingUp, TrendingDown, Minus, Flame, Package, Store, DollarSign, ShoppingCart, X, AlertTriangle, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { adminService, type AdminCategory, type AdminCategoryDetail } from '../../services/admin.service';
 
 export function AdminCategories() {
@@ -162,28 +162,28 @@ export function AdminCategories() {
           <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center mb-2">
             <Tags className="w-4 h-4 text-indigo-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{totalCategories}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(totalCategories), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('totalCategories')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center mb-2">
             <ToggleRight className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{activeCount}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(activeCount), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('active')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center mb-2">
             <ToggleLeft className="w-4 h-4 text-slate-500" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{inactiveCount}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(inactiveCount), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('inactive')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center mb-2">
             <Package className="w-4 h-4 text-amber-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{categories.reduce((s, c) => s + c.productCount, 0)}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(categories.reduce((s, c) => s + c.productCount, 0)), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('products')}</p>
         </div>
       </div>
@@ -220,11 +220,11 @@ export function AdminCategories() {
 
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div className="bg-slate-50 rounded-lg p-2 text-center">
-                <p className="text-xs font-bold text-slate-900">{category.productCount}</p>
+                <p className="text-xs font-bold text-slate-900">{toArabicNumeral(String(category.productCount), language)}</p>
                 <p className="text-[9px] text-slate-500">{t('products')}</p>
               </div>
               <div className="bg-slate-50 rounded-lg p-2 text-center">
-                <p className="text-xs font-bold text-slate-900">{category.supplierCount}</p>
+                <p className="text-xs font-bold text-slate-900">{toArabicNumeral(String(category.supplierCount), language)}</p>
                 <p className="text-[9px] text-slate-500">{t('suppliers')}</p>
               </div>
             </div>
@@ -276,14 +276,14 @@ export function AdminCategories() {
                       <Package className="w-4 h-4 text-indigo-400" />
                       <span>{t('products')}</span>
                     </div>
-                    <p className="text-xl font-bold text-slate-900">{selectedCategory.productCount}</p>
+                    <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(selectedCategory.productCount), language)}</p>
                   </div>
                   <div className="bg-slate-50 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-sm text-slate-600 mb-1">
                       <Store className="w-4 h-4 text-indigo-400" />
                       <span>{t('suppliers')}</span>
                     </div>
-                    <p className="text-xl font-bold text-slate-900">{selectedCategory.supplierCount}</p>
+                    <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(selectedCategory.supplierCount), language)}</p>
                   </div>
                 </div>
               </div>

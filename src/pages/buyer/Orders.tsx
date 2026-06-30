@@ -13,7 +13,7 @@ import {
   UserCheck,
   Crown,
 } from "lucide-react";
-import { useLanguage } from "../../i18n";
+import { useLanguage, toArabicNumeral } from "../../i18n";
 import {
   buyerService,
   type BuyerOrderListItem,
@@ -114,7 +114,7 @@ export function Orders() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{t("myOrders")}</h1>
           <p className="text-sm text-slate-500 mt-1">
-            {filteredOrders.length} {t("ordersPlaced")}
+            {toArabicNumeral(String(filteredOrders.length), language)} {t("ordersPlaced")}
           </p>
         </div>
         <select
@@ -223,7 +223,7 @@ export function Orders() {
                       ))}
                     {(order as any).categories.length > 3 && (
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-50 text-slate-500 border border-slate-200/40">
-                        +{(order as any).categories.length - 3}
+                        +{toArabicNumeral(String((order as any).categories.length - 3), language)}
                       </span>
                     )}
                   </div>
@@ -245,10 +245,10 @@ export function Orders() {
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-500 justify-end">
                     <Package className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <span>
-                      {(order as any).productCount ||
+                      {toArabicNumeral(String((order as any).productCount ||
                         (order as any).productsCount ||
                         (order as any).products?.length ||
-                        0}{" "}
+                        0), language)}{" "}
                       {t("products" as any)}
                     </span>
                   </div>
@@ -273,10 +273,10 @@ export function Orders() {
               {/* ── Footer Segment ── */}
               <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <span className="text-xs text-slate-500 font-medium">
-                  {order.participantCount} {t("participants" as any)}
+                  {toArabicNumeral(String(order.participantCount), language)} {t("participants" as any)}
                 </span>
                 <span className="text-base font-extrabold text-indigo-750 tracking-tight">
-                  {order.totalOrderValue.toLocaleString()} EGP
+                  {toArabicNumeral(order.totalOrderValue.toLocaleString(), language)} {t('currency')}
                 </span>
               </div>
             </div>

@@ -4,7 +4,7 @@ import {
   DollarSign, ShoppingCart, Truck, Package, Clock, AlertTriangle,
   TrendingUp, Activity, AlertCircle,
 } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { supplierService, type SupplierDashboardResponse } from '../../services/supplier.service';
 
 export function SupplierDashboard() {
@@ -56,7 +56,7 @@ export function SupplierDashboard() {
               <DollarSign className="w-5 h-5 text-emerald-600" />
             </div>
           </div>
-          <p className="text-xl font-bold text-slate-900">{kpi.totalRevenue.toLocaleString()} EGP</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(kpi.totalRevenue.toLocaleString(), language)} {t('currency')}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('revenue')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -65,7 +65,7 @@ export function SupplierDashboard() {
               <ShoppingCart className="w-5 h-5 text-indigo-600" />
             </div>
           </div>
-          <p className="text-xl font-bold text-slate-900">{kpi.activeOrders}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(kpi.activeOrders), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('activeOrders')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -74,7 +74,7 @@ export function SupplierDashboard() {
               <Truck className="w-5 h-5 text-amber-600" />
             </div>
           </div>
-          <p className="text-xl font-bold text-slate-900">{kpi.pendingDeliveries}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(kpi.pendingDeliveries), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('pendingDeliveries')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -83,7 +83,7 @@ export function SupplierDashboard() {
               <Package className="w-5 h-5 text-blue-600" />
             </div>
           </div>
-          <p className="text-xl font-bold text-slate-900">{kpi.totalProducts}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(kpi.totalProducts), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('products')}</p>
         </div>
       </div>
@@ -94,7 +94,7 @@ export function SupplierDashboard() {
             <AlertTriangle className="w-4 h-4 text-amber-600" />
             {t('ordersRequiringAction')}
           </h2>
-          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">{pendingOrders.length}</span>
+          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">{toArabicNumeral(String(pendingOrders.length), language)}</span>
         </div>
         {pendingOrders.length === 0 ? (
           <div className="px-5 py-8 text-center text-sm text-slate-500">{t('noOrdersRequiringAction')}</div>
@@ -115,8 +115,8 @@ export function SupplierDashboard() {
                     <td className="px-5 py-4">
                       <p className="text-sm font-medium text-slate-900">{order.title}</p>
                     </td>
-                    <td className="px-5 py-4 text-sm text-slate-700">{order.participants}</td>
-                    <td className="px-5 py-4 text-sm font-semibold text-slate-900">{order.totalAmount.toLocaleString()} EGP</td>
+                    <td className="px-5 py-4 text-sm text-slate-700">{toArabicNumeral(String(order.participants), language)}</td>
+                    <td className="px-5 py-4 text-sm font-semibold text-slate-900">{toArabicNumeral(order.totalAmount.toLocaleString(), language)} {t('currency')}</td>
                     <td className="px-5 py-4 text-end">
                       <button
                         onClick={() => navigate('/supplier/orders')}
@@ -146,8 +146,8 @@ export function SupplierDashboard() {
                 <div key={order.id} className="px-5 py-3.5 flex items-center justify-between hover:bg-slate-50/50">
                   <p className="text-sm font-medium text-slate-900">{order.title}</p>
                   <div className="flex items-center gap-3">
-                    <span className="text-[11px] text-slate-500">{order.participants} participants</span>
-                    <span className="text-[11px] text-slate-500">{order.totalValue.toLocaleString()} EGP</span>
+                    <span className="text-[11px] text-slate-500">{toArabicNumeral(String(order.participants), language)} participants</span>
+                    <span className="text-[11px] text-slate-500">{toArabicNumeral(order.totalValue.toLocaleString(), language)} {t('currency')}</span>
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                       {order.status}
                     </span>
@@ -196,7 +196,7 @@ export function SupplierDashboard() {
             { label: t('failed'), count: deliveryOverview.failed, color: 'text-red-600', bg: 'bg-red-50' },
           ].map((item) => (
             <div key={item.label} className={`rounded-xl p-3 ${item.bg}`}>
-              <p className={`text-lg font-bold ${item.color}`}>{item.count}</p>
+              <p className={`text-lg font-bold ${item.color}`}>{toArabicNumeral(String(item.count), language)}</p>
               <p className="text-[11px] text-slate-600 mt-0.5">{item.label}</p>
             </div>
           ))}

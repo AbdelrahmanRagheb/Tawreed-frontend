@@ -4,7 +4,7 @@ import {
   FileText, Clock, CheckCircle, Trash2, Play, Copy,
   MapPin, Package, Calendar, DollarSign, Bookmark, AlertTriangle,
 } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { buyerService, type BuyerOrderListItem } from '../../services/buyer.service';
 
 export function SavedOrders() {
@@ -53,7 +53,7 @@ export function SavedOrders() {
           : 'text-slate-600 hover:bg-slate-100'
       }`}
     >
-      {label} ({count})
+      {label} ({toArabicNumeral(String(count), language)})
     </button>
   );
 
@@ -125,11 +125,11 @@ export function SavedOrders() {
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500 mb-3">
                     <span className="flex items-center gap-1">
                       <Package className="w-3 h-3" />
-                      {draft.productCount} {t('items')}
+                      {toArabicNumeral(String(draft.productCount), language)} {t('items')}
                     </span>
                     <span className="flex items-center gap-1">
                       <DollarSign className="w-3 h-3" />
-                      {draft.totalOrderValue.toLocaleString()} EGP
+                      {toArabicNumeral(draft.totalOrderValue.toLocaleString(), language)} {t('currency')}
                     </span>
                     {draft.region && (
                       <span className="flex items-center gap-1">

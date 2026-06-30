@@ -5,9 +5,9 @@ import {
   BadgePercent, CheckCircle, ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { buyerService, type BuyerProfile } from '../../services/buyer.service';
-import { publicService, type PublicRegion } from '../../services/public.service';
+import { publicService, type PublicRegion, type PublicBusinessType } from '../../services/public.service';
 import { RegionCascader } from '../../components/RegionCascader';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,6 +22,7 @@ export function BuyerProfile() {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [regions, setRegions] = useState<PublicRegion[]>([]);
+  const [businessTypes, setBusinessTypes] = useState<PublicBusinessType[]>([]);
   const [form, setForm] = useState({
     fullName: '', phone: '', businessName: '', businessType: '',
     regionId: '', taxId: '', commercialRegistrationNo: '',
@@ -29,6 +30,7 @@ export function BuyerProfile() {
 
   useEffect(() => {
     publicService.listRegions().then((r) => setRegions(r.data)).catch(() => {});
+    publicService.listBusinessTypes().then((b) => setBusinessTypes(b.data)).catch(() => {});
     buyerService.getProfile()
       .then((profileRes) => {
         const p = profileRes.data;
@@ -202,7 +204,21 @@ export function BuyerProfile() {
                 <Section title={t('businessInfo')} icon={Briefcase}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <Field label={t('businessName')} value={form.businessName} onChange={(v) => setForm((f) => ({ ...f, businessName: v }))} />
-                    <Field label={t('businessType')} value={form.businessType} onChange={(v) => setForm((f) => ({ ...f, businessType: v }))} />
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('businessType')}</label>
+                      <select
+                        value={form.businessType}
+                        onChange={(e) => setForm((f) => ({ ...f, businessType: e.target.value }))}
+                        className="w-full h-11 px-4 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+                      >
+                        <option value="">{t('selectBusinessType')}</option>
+                        {businessTypes.map((bt) => (
+                          <option key={bt.id} value={bt.nameEn}>
+                            {language === 'ar' ? bt.nameAr : bt.nameEn}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </Section>
 
@@ -235,7 +251,7 @@ export function BuyerProfile() {
 
                 <InfoCard title={t('businessInfo')} icon={Briefcase}>
                   <InfoRow icon={Building2} label={t('businessName')} value={profile?.businessName} />
-                  <InfoRow icon={BadgePercent} label={t('businessType')} value={profile?.businessType} />
+                  <InfoRow icon={BadgePercent} label={t('businessType')} value={(language === 'ar' && profile?.businessType) ? (businessTypes.find(bt => bt.nameEn === profile.businessType || bt.id === profile.businessType)?.nameAr || profile.businessType) : profile?.businessType} />
                 </InfoCard>
 
                 <InfoCard title={t('registrationDocs')} icon={BadgePercent}>
@@ -275,12 +291,13 @@ function InfoCard({ title, icon: Icon, children }: { title: string; icon: any; c
 }
 
 function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value?: string | null }) {
+  const { language } = useLanguage();
   return (
     <div className="flex items-center gap-3">
       <Icon className="w-4 h-4 text-slate-400 shrink-0" />
       <div className="flex items-baseline gap-2 min-w-0">
         <span className="text-xs text-slate-500 shrink-0">{label}</span>
-        <span className="text-sm font-medium text-slate-800 truncate">{value || '-'}</span>
+        <span className="text-sm font-medium text-slate-800 truncate">{toArabicNumeral(value || '-', language)}</span>
       </div>
     </div>
   );

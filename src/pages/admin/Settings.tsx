@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Globe, Shield, Bell, CreditCard, Palette, Users, MapPin, Loader2, CheckCircle2 } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { Settings as SettingsIcon, Globe, Shield, Bell, CreditCard, Palette, Users, MapPin, Clock, Loader2, CheckCircle2 } from 'lucide-react';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { adminService } from '../../services/admin.service';
 
 const ALL_REGION_TYPES = [
@@ -55,12 +55,34 @@ export function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [deadlineDays, setDeadlineDays] = useState(3);
+  const [deadlineDaysLoading, setDeadlineDaysLoading] = useState(true);
+  const [deadlineDaysSaving, setDeadlineDaysSaving] = useState(false);
+  const [deadlineDaysSaved, setDeadlineDaysSaved] = useState(false);
+  const [urgentHours, setUrgentHours] = useState(6);
+  const [urgentHoursLoading, setUrgentHoursLoading] = useState(true);
+  const [urgentHoursSaving, setUrgentHoursSaving] = useState(false);
+  const [urgentHoursSaved, setUrgentHoursSaved] = useState(false);
 
   useEffect(() => {
     adminService.getGroupRegionTypes().then((res) => {
       setSelectedTypes(new Set(res.data));
       setLoading(false);
     }).catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    adminService.getDefaultDeadlineDays().then((res) => {
+      setDeadlineDays(res.data.days);
+      setDeadlineDaysLoading(false);
+    }).catch(() => setDeadlineDaysLoading(false));
+  }, []);
+
+  useEffect(() => {
+    adminService.getUrgentDeadlineHours().then((res) => {
+      setUrgentHours(res.data.hours);
+      setUrgentHoursLoading(false);
+    }).catch(() => setUrgentHoursLoading(false));
   }, []);
 
   const toggleType = (type: string) => {
@@ -158,7 +180,7 @@ export function AdminSettings() {
 
             <div className="flex items-center justify-between mt-5 pt-4 border-t border-slate-100">
               <p className="text-xs text-slate-400">
-                {selectedTypes.size} / {ALL_REGION_TYPES.length} {language === 'ar' ? 'محدد' : 'selected'}
+                {toArabicNumeral(String(selectedTypes.size), language)} / {toArabicNumeral(String(ALL_REGION_TYPES.length), language)} {language === 'ar' ? 'محدد' : 'selected'}
               </p>
               <div className="flex items-center gap-3">
                 {saved && (
@@ -177,6 +199,144 @@ export function AdminSettings() {
                     <CheckCircle2 className="w-4 h-4" />
                   )}
                   {saving
+                    ? (language === 'ar' ? 'جاري الحفظ...' : 'Saving...')
+                    : (language === 'ar' ? 'حفظ' : 'Save')}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Default Deadline Days */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5 text-amber-600" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-slate-900">Default Order Deadline</h2>
+            <p className="text-sm text-slate-500 mt-0.5">Number of days before new orders close automatically</p>
+          </div>
+        </div>
+
+        {deadlineDaysLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+          </div>
+        ) : (
+          <>
+            <div className="mt-4 flex items-center gap-4">
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={deadlineDays}
+                onChange={(e) => { setDeadlineDays(parseInt(e.target.value) || 1); setDeadlineDaysSaved(false); }}
+                className="w-24 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center font-bold"
+              />
+              <span className="text-sm text-slate-600">{language === 'ar' ? 'أيام' : 'days'}</span>
+            </div>
+
+            <div className="flex items-center justify-between mt-5 pt-4 border-t border-slate-100">
+              <p className="text-xs text-slate-400">
+                New orders will have a deadline of <strong>{toArabicNumeral(String(deadlineDays), language)}</strong> {deadlineDays === 1 ? 'day' : 'days'} from creation
+              </p>
+              <div className="flex items-center gap-3">
+                {deadlineDaysSaved && (
+                  <span className="text-xs text-emerald-600 font-semibold">
+                    {language === 'ar' ? 'تم الحفظ' : 'Saved'}
+                  </span>
+                )}
+                <button
+                  onClick={async () => {
+                    setDeadlineDaysSaving(true);
+                    try {
+                      await adminService.setDefaultDeadlineDays(deadlineDays);
+                      setDeadlineDaysSaved(true);
+                      setTimeout(() => setDeadlineDaysSaved(false), 2000);
+                    } finally {
+                      setDeadlineDaysSaving(false);
+                    }
+                  }}
+                  disabled={deadlineDaysSaving}
+                  className="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                >
+                  {deadlineDaysSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4" />
+                  )}
+                  {deadlineDaysSaving
+                    ? (language === 'ar' ? 'جاري الحفظ...' : 'Saving...')
+                    : (language === 'ar' ? 'حفظ' : 'Save')}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Urgent Deadline Hours */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5 text-red-600" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-slate-900">Urgent Order Deadline</h2>
+            <p className="text-sm text-slate-500 mt-0.5">Number of hours before urgent orders close automatically</p>
+          </div>
+        </div>
+
+        {urgentHoursLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+          </div>
+        ) : (
+          <>
+            <div className="mt-4 flex items-center gap-4">
+              <input
+                type="number"
+                min={1}
+                max={168}
+                value={urgentHours}
+                onChange={(e) => { setUrgentHours(parseInt(e.target.value) || 1); setUrgentHoursSaved(false); }}
+                className="w-24 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-center font-bold"
+              />
+              <span className="text-sm text-slate-600">{language === 'ar' ? 'ساعة' : 'hours'}</span>
+            </div>
+
+            <div className="flex items-center justify-between mt-5 pt-4 border-t border-slate-100">
+              <p className="text-xs text-slate-400">
+                Urgent orders will have a deadline of <strong>{toArabicNumeral(String(urgentHours), language)}</strong> {urgentHours === 1 ? 'hour' : 'hours'} from creation
+              </p>
+              <div className="flex items-center gap-3">
+                {urgentHoursSaved && (
+                  <span className="text-xs text-emerald-600 font-semibold">
+                    {language === 'ar' ? 'تم الحفظ' : 'Saved'}
+                  </span>
+                )}
+                <button
+                  onClick={async () => {
+                    setUrgentHoursSaving(true);
+                    try {
+                      await adminService.setUrgentDeadlineHours(urgentHours);
+                      setUrgentHoursSaved(true);
+                      setTimeout(() => setUrgentHoursSaved(false), 2000);
+                    } finally {
+                      setUrgentHoursSaving(false);
+                    }
+                  }}
+                  disabled={urgentHoursSaving}
+                  className="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                >
+                  {urgentHoursSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4" />
+                  )}
+                  {urgentHoursSaving
                     ? (language === 'ar' ? 'جاري الحفظ...' : 'Saving...')
                     : (language === 'ar' ? 'حفظ' : 'Save')}
                 </button>

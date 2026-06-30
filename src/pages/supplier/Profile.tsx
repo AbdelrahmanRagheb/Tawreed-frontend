@@ -5,7 +5,7 @@ import {
   BadgePercent, CheckCircle, ArrowLeft, Star,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { supplierService, type SupplierProfile } from '../../services/supplier.service';
 import { publicService, type PublicRegion } from '../../services/public.service';
 import { RegionCascader } from '../../components/RegionCascader';
@@ -220,14 +220,14 @@ export function SupplierProfile() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <InfoCard title={t('personalInfo')} icon={User}>
                   <InfoRow icon={Mail} label="Email" value={profile?.email} />
-                  <InfoRow icon={Phone} label={t('phone')} value={profile?.phone} />
+                  <InfoRow icon={Phone} label={t('phone')} value={profile?.phone ? toArabicNumeral(profile.phone, language) : undefined} />
                   <InfoRow icon={Calendar} label={t('memberSince')} value={profile?.joinedDate ? new Date(profile.joinedDate).toLocaleDateString() : '-'} />
                 </InfoCard>
 
                 <InfoCard title={t('businessInfo')} icon={Briefcase}>
                   <InfoRow icon={Building2} label={t('companyName')} value={profile?.companyName} />
-                  <InfoRow icon={BadgePercent} label={t('taxId')} value={profile?.taxId} />
-                  <InfoRow icon={BadgePercent} label={t('commercialRegistrationNo')} value={profile?.commercialRegistrationNo} />
+                  <InfoRow icon={BadgePercent} label={t('taxId')} value={profile?.taxId ? toArabicNumeral(profile.taxId, language) : undefined} />
+                  <InfoRow icon={BadgePercent} label={t('commercialRegistrationNo')} value={profile?.commercialRegistrationNo ? toArabicNumeral(profile.commercialRegistrationNo, language) : undefined} />
                 </InfoCard>
 
                 <InfoCard title={t('location')} icon={MapPin}>

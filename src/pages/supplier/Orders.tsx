@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Package, Clock, CheckCircle, XCircle, AlertCircle, Calendar, Loader2 } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { Package, Clock, CheckCircle, XCircle, AlertCircle, Calendar, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { supplierService, type SupplierOrderListItem } from '../../services/supplier.service';
+
+const itemStatusBadge: Record<string, { bg: string; text: string; label: string }> = {
+  Pending: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Pending' },
+  Accepted: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Accepted' },
+  Declined: { bg: 'bg-red-100', text: 'text-red-700', label: 'Declined' },
+  Unassigned: { bg: 'bg-slate-100', text: 'text-slate-500', label: 'Unassigned' },
+};
 
 const statusConfig: Record<string, { icon: typeof Package; color: string; bg: string }> = {
   Open: { icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-100' },
@@ -104,7 +111,7 @@ export function SupplierOrders() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{t('incomingOrders')}</h1>
-          <p className="text-sm text-slate-500 mt-1">{orders.length} {t('ordersReceived')}</p>
+          <p className="text-sm text-slate-500 mt-1">{toArabicNumeral(String(orders.length), language)} {t('ordersReceived')}</p>
         </div>
         <select
           value={statusFilter}
@@ -142,17 +149,23 @@ export function SupplierOrders() {
               </div>
 
               <div className="px-4 py-3 space-y-2 flex-1">
-                {order.items.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-                      <Package className="w-4 h-4 text-indigo-600" />
+                {order.items.map((item, idx) => {
+                  const badge = itemStatusBadge[item.itemStatus] || itemStatusBadge.Unassigned;
+                  return (
+                    <div key={idx} className={`flex items-center gap-3 rounded-lg p-2 ${item.itemStatus === 'Pending' ? 'bg-amber-50/50 border border-amber-100' : ''}`}>
+                      <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+                        <Package className="w-4 h-4 text-indigo-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-slate-900 truncate">{item.productName}</p>
+                        <p className="text-[11px] text-slate-500">×{toArabicNumeral(String(item.quantity), language)} — {toArabicNumeral(item.lineTotal.toLocaleString(), language)} {t('currency')}</p>
+                      </div>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${badge.bg} ${badge.text}`}>
+                        {badge.label}
+                      </span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-900 truncate">{item.productName}</p>
-                      <p className="text-[11px] text-slate-500">×{item.quantity} — EGP {item.lineTotal.toLocaleString()}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="px-4 py-3 border-t border-slate-100">
@@ -166,29 +179,44 @@ export function SupplierOrders() {
               </div>
 
               <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs text-slate-500">{order.items.length} {t('items')}</span>
-                <span className="text-lg font-black text-slate-900">EGP {order.totalAmount.toLocaleString()}</span>
+                <span className="text-xs text-slate-500">{toArabicNumeral(String(order.items.length), language)} {t('items')}</span>
+                <span className="text-lg font-black text-slate-900">{toArabicNumeral(order.totalAmount.toLocaleString(), language)} {t('currency')}</span>
               </div>
 
-              {order.status === 'PendingApproval' && (
-                <div className="flex border-t border-slate-100">
-                  <button
-                    onClick={() => handleAcceptClick(order.id)}
-                    disabled={processing[order.id]}
-                    className="flex-1 py-2.5 text-[11px] font-semibold text-emerald-600 hover:bg-emerald-50 transition-colors rounded-bl-xl disabled:opacity-50"
-                  >
-                    {processing[order.id] ? '...' : t('accept')}
-                  </button>
-                  <div className="w-px bg-slate-100" />
-                  <button
-                    onClick={() => handleDecline(order.id)}
-                    disabled={processing[order.id]}
-                    className="flex-1 py-2.5 text-[11px] font-semibold text-red-600 hover:bg-red-50 transition-colors rounded-br-xl disabled:opacity-50"
-                  >
-                    {processing[order.id] ? '...' : t('decline')}
-                  </button>
-                </div>
-              )}
+              {(() => {
+                const pendingItems = order.items.filter(i => i.itemStatus === 'Pending');
+                const hasPending = pendingItems.length > 0;
+                const allResolved = order.items.every(i => i.itemStatus === 'Accepted' || i.itemStatus === 'Declined');
+                if (hasPending) {
+                  return (
+                    <div className="flex border-t border-slate-100">
+                      <button
+                        onClick={() => handleAcceptClick(order.id)}
+                        disabled={processing[order.id]}
+                        className="flex-1 py-2.5 text-[11px] font-semibold text-emerald-600 hover:bg-emerald-50 transition-colors rounded-bl-xl disabled:opacity-50"
+                      >
+                        {processing[order.id] ? '...' : `${t('accept')} (${toArabicNumeral(String(pendingItems.length), language)})`}
+                      </button>
+                      <div className="w-px bg-slate-100" />
+                      <button
+                        onClick={() => handleDecline(order.id)}
+                        disabled={processing[order.id]}
+                        className="flex-1 py-2.5 text-[11px] font-semibold text-red-600 hover:bg-red-50 transition-colors rounded-br-xl disabled:opacity-50"
+                      >
+                        {processing[order.id] ? '...' : `${t('decline')} (${toArabicNumeral(String(pendingItems.length), language)})`}
+                      </button>
+                    </div>
+                  );
+                }
+                if (allResolved) {
+                  return (
+                    <div className="px-4 py-2.5 border-t border-slate-100 text-center">
+                      <span className="text-[11px] font-semibold text-emerald-600">All items resolved</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
 
             </div>
@@ -203,78 +231,95 @@ export function SupplierOrders() {
         </div>
       )}
 
-      {acceptTarget && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-          onClick={(e) => { if (e.target === e.currentTarget) setAcceptTarget(null); }}
-        >
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">{t('acceptOrder')}</h3>
+      {acceptTarget && (() => {
+        const targetOrder = orders.find(o => o.id === acceptTarget);
+        const pendingItems = targetOrder?.items.filter(i => i.itemStatus === 'Pending') ?? [];
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setAcceptTarget(null); }}
+          >
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-bold text-slate-900 mb-1">{t('acceptOrder')}</h3>
+              <p className="text-xs text-slate-500 mb-4">{toArabicNumeral(String(pendingItems.length), language)} item{pendingItems.length !== 1 ? 's' : ''} to accept</p>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  {t('deliveryDate')} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  value={deliveryDate}
-                  onChange={(e) => { setDeliveryDate(e.target.value); setAcceptError(''); }}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  {t('notes')}
-                </label>
-                <textarea
-                  value={acceptNotes}
-                  onChange={(e) => setAcceptNotes(e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                  placeholder={t('optionalNotes')}
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  {t('deliveryNotes')}
-                </label>
-                <textarea
-                  value={deliveryNotes}
-                  onChange={(e) => setDeliveryNotes(e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                  placeholder={t('optionalDeliveryNotes')}
-                />
-              </div>
-
-              {acceptError && (
-                <p className="text-xs text-red-600">{acceptError}</p>
+              {/* Items to be accepted */}
+              {pendingItems.length > 0 && (
+                <div className="bg-amber-50 rounded-xl p-3 mb-4 space-y-1.5">
+                  {pendingItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-slate-800">{item.productName}</span>
+                      <span className="text-slate-600">×{toArabicNumeral(String(item.quantity), language)} — {toArabicNumeral(item.lineTotal.toLocaleString(), language)} {t('currency')}</span>
+                    </div>
+                  ))}
+                </div>
               )}
-            </div>
 
-            <div className="flex items-center gap-3 mt-6">
-              <button
-                onClick={() => setAcceptTarget(null)}
-                disabled={processing[acceptTarget]}
-                className="flex-1 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
-              >
-                {t('cancel')}
-              </button>
-              <button
-                onClick={handleAcceptConfirm}
-                disabled={processing[acceptTarget] || !deliveryDate}
-                className="flex-1 py-2 text-xs font-bold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
-              >
-                {processing[acceptTarget] && <Loader2 className="w-3 h-3 animate-spin" />}
-                {processing[acceptTarget] ? '...' : t('accept')}
-              </button>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {t('deliveryDate')} <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={deliveryDate}
+                    onChange={(e) => { setDeliveryDate(e.target.value); setAcceptError(''); }}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {t('notes')}
+                  </label>
+                  <textarea
+                    value={acceptNotes}
+                    onChange={(e) => setAcceptNotes(e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                    placeholder={t('optionalNotes')}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {t('deliveryNotes')}
+                  </label>
+                  <textarea
+                    value={deliveryNotes}
+                    onChange={(e) => setDeliveryNotes(e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                    placeholder={t('optionalDeliveryNotes')}
+                  />
+                </div>
+
+                {acceptError && (
+                  <p className="text-xs text-red-600">{acceptError}</p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 mt-6">
+                <button
+                  onClick={() => setAcceptTarget(null)}
+                  disabled={processing[acceptTarget]}
+                  className="flex-1 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  onClick={handleAcceptConfirm}
+                  disabled={processing[acceptTarget] || !deliveryDate}
+                  className="flex-1 py-2 text-xs font-bold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                >
+                  {processing[acceptTarget] && <Loader2 className="w-3 h-3 animate-spin" />}
+                  {processing[acceptTarget] ? '...' : `Accept ${toArabicNumeral(String(pendingItems.length), language)} item${pendingItems.length !== 1 ? 's' : ''}`}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
     </div>
   );

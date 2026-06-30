@@ -4,7 +4,7 @@ import {
   MapPin, Calendar, AlertTriangle, Phone, Mail, Briefcase, Star, Shield,
   ShoppingCart, CheckSquare, FileText, Loader2
 } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { adminService, type AdminUser, type AdminUserDetail } from '../../services/admin.service';
 
 type StatusFilter = 'all' | 'Active' | 'Suspended';
@@ -128,7 +128,7 @@ export function AdminUsers() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{t('buyersManagement')}</h1>
-          <p className="text-sm text-slate-500 mt-1">{buyers.length} {t('buyers')}</p>
+          <p className="text-sm text-slate-500 mt-1">{toArabicNumeral(String(buyers.length), language)} {t('buyers')}</p>
         </div>
       </div>
 
@@ -137,21 +137,21 @@ export function AdminUsers() {
           <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center mb-2">
             <Users className="w-4 h-4 text-indigo-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{buyers.length.toLocaleString()}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(buyers.length.toLocaleString(), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('totalBuyers')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center mb-2">
             <Users className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{activeCount.toLocaleString()}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(activeCount.toLocaleString(), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('activeBuyers')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center mb-2">
             <Users className="w-4 h-4 text-red-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{suspendedCount.toLocaleString()}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(suspendedCount.toLocaleString(), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('suspendedBuyers')}</p>
         </div>
       </div>
@@ -281,7 +281,7 @@ export function AdminUsers() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex items-center gap-2 text-sm text-slate-600">
                         <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                        <span>{selectedBuyer.phone || '-'}</span>
+                        <span>{toArabicNumeral(selectedBuyer.phone || '-', language)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-slate-600">
                         <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
@@ -371,7 +371,7 @@ export function AdminUsers() {
                           <div className={`w-6 h-6 rounded ${stat.bg} flex items-center justify-center mb-1`}>
                             <stat.icon className={`w-3 h-3 ${stat.color}`} />
                           </div>
-                          <p className="text-lg font-bold text-slate-900">{stat.value}</p>
+                          <p className="text-lg font-bold text-slate-900">{toArabicNumeral(String(stat.value), language)}</p>
                           <p className="text-[10px] text-slate-500 mt-0.5">{stat.label}</p>
                         </div>
                       ))}
@@ -398,7 +398,7 @@ export function AdminUsers() {
                                 <td className="px-4 py-2.5 text-xs font-medium text-slate-700">{order.title}</td>
                                 <td className="px-4 py-2.5">{statusBadge(order.status)}</td>
                                 <td className="px-4 py-2.5 text-xs text-slate-700 text-end font-medium">{formatCurrency(order.estimatedTotal)}</td>
-                                <td className="px-4 py-2.5 text-xs text-slate-700 text-end">{order.participantsCount}</td>
+                                <td className="px-4 py-2.5 text-xs text-slate-700 text-end">{toArabicNumeral(String(order.participantsCount), language)}</td>
                                 <td className="px-4 py-2.5 text-xs text-slate-500 text-end">{formatDate(order.createdAt)}</td>
                               </tr>
                             ))}

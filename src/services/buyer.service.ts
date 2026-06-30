@@ -85,7 +85,11 @@ export interface OrderProduct {
   targetQuantity: number;
   unit: string;
   unitPrice?: number;
+  marketPrice?: number;
   supplierProductId?: string;
+  supplierId?: string;
+  supplierName: string;
+  itemStatus: string;
 }
 
 export interface ParticipantItem {
@@ -124,8 +128,8 @@ export interface OrderDetailResponse {
   deadlinePassed: boolean;
   status: string;
   totalOrderValue: number;
-  supplierName: string;
-  supplierId: string;
+  totalProductCount?: number;
+  assignedProductCount?: number;
   deliveryPreference?: string;
   preferredDeliveryPersonName?: string;
   proposedDeliveryFee?: number;
@@ -140,6 +144,7 @@ export interface OrderDetailResponse {
 export interface CreateOrderRequest {
   title: string;
   description?: string;
+  isUrgent?: boolean;
   deadline?: string;
   items: { productId: string; targetQuantity: number }[];
 }
@@ -210,10 +215,31 @@ export interface BuyerUpdateProfileRequest {
   preferredLang?: string;
 }
 
+export interface EligiblePricingTier {
+  minQty: number;
+  maxQty: number | null;
+  unitPrice: number;
+}
+
+export interface EligibleProduct {
+  productId: string;
+  groupOrderItemId: string;
+  unitPrice: number;
+  availableStock: number;
+  pricingTiers: EligiblePricingTier[];
+}
+
 export interface EligibleSupplier {
   supplierId: string;
   supplierName: string;
   totalEstimatedCost: number;
+  coveredProductCount: number;
+  coveredProducts: EligibleProduct[];
+}
+
+export interface AssignSupplierRequest {
+  supplierId: string;
+  itemIds: string[];
 }
 
 export interface SupplierPublicPricingTier {
@@ -263,8 +289,8 @@ export const buyerService = {
   getSupplierProfile: (orderId: string, supplierId: string) =>
     http.get<SupplierPublicProfile>(`/buyer/orders/${orderId}/suppliers/${supplierId}`),
 
-  assignSupplier: (orderId: string, supplierId: string) =>
-    http.post(`/buyer/orders/${orderId}/assign-supplier/${supplierId}`),
+  assignSupplier: (orderId: string, data: AssignSupplierRequest) =>
+    http.post(`/buyer/orders/${orderId}/assign-supplier`, data),
 
   createOrder: (data: CreateOrderRequest) =>
     http.post('/buyer/orders', data),

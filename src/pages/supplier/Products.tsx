@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Edit3, Trash2, AlertTriangle, X, Layers, Save, Plus, ChevronDown, ChevronUp, Package, ShoppingBag, Tags, Loader2 } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, getUnitDisplay, toArabicNumeral } from '../../i18n';
 import { publicService, type PublicProduct, type PublicCategory } from '../../services/public.service';
 import { supplierService, type SupplierProductListItem, type PricingTier, type CreatePricingTierRequest, type UpdatePricingTierRequest } from '../../services/supplier.service';
 
@@ -281,7 +281,7 @@ export function SupplierProducts() {
             <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
               tab === 'mine' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'
             }`}>
-              {ownedProducts.length}
+              {toArabicNumeral(String(ownedProducts.length), language)}
             </span>
           )}
         </button>
@@ -299,7 +299,7 @@ export function SupplierProducts() {
             <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
               tab === 'browse' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'
             }`}>
-              {unownedProducts.length}
+              {toArabicNumeral(String(unownedProducts.length), language)}
             </span>
           )}
         </button>
@@ -317,7 +317,7 @@ export function SupplierProducts() {
             <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
               tab === 'categories' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-600'
             }`}>
-              {categoryIds.length}
+              {toArabicNumeral(String(categoryIds.length), language)}
             </span>
           )}
         </button>
@@ -370,12 +370,12 @@ export function SupplierProducts() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
                           <span className={`text-sm font-semibold ${isLowStock ? 'text-amber-600' : 'text-slate-900'}`}>
-                            {sp.stock} {sp.unit}
+                            {toArabicNumeral(String(sp.stock), language)} {getUnitDisplay(sp.unit, language)}
                           </span>
                           {isLowStock && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">{sp.price} EGP</td>
+                      <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">{toArabicNumeral(String(sp.price), language)} {t('currency')}</td>
                       <td className="px-5 py-3.5 text-center">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${
                           sp.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
@@ -423,7 +423,7 @@ export function SupplierProducts() {
             </div>
           ) : (
             <div>
-              <p className="text-sm text-slate-600 mb-4">{t('categoriesConfigured')}: {categoryIds.length}</p>
+              <p className="text-sm text-slate-600 mb-4">{t('categoriesConfigured')}: {toArabicNumeral(String(categoryIds.length), language)}</p>
               <div className="flex flex-wrap gap-2">
                 {allCategories.length === 0 ? (
                   <p className="text-sm text-slate-400 w-full">{t('noCategories')}</p>
@@ -606,7 +606,7 @@ export function SupplierProducts() {
               <div className="bg-slate-50 rounded-xl p-4">
                 <h3 className="font-semibold text-slate-900">{addModalProduct.name}</h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  {addModalProduct.categoryName} &middot; {addModalProduct.unit}
+                  {addModalProduct.categoryName} &middot; {getUnitDisplay(addModalProduct.unit, language)}
                 </p>
                 {addModalProduct.description && (
                   <p className="text-xs text-slate-500 mt-2">{addModalProduct.description}</p>
@@ -614,7 +614,7 @@ export function SupplierProducts() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">{t('price')} (EGP)</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">{t('price')} ({t('currency')})</label>
                   <input type="number" min="0" step="0.01" value={addForm.price || ''}
                     onChange={(e) => setAddForm({ ...addForm, price: parseFloat(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
@@ -638,7 +638,7 @@ export function SupplierProducts() {
                     <Layers className="w-4 h-4 text-amber-600" />
                     <span className="text-sm font-semibold text-slate-900">{t('pricingTiers')}</span>
                     {addTiers.length > 0 && (
-                      <span className="text-[11px] text-slate-500">({addTiers.length})</span>
+                      <span className="text-[11px] text-slate-500">({toArabicNumeral(String(addTiers.length), language)})</span>
                     )}
                   </div>
                   {addTiers.length > 0 ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -736,7 +736,7 @@ export function SupplierProducts() {
                   <div>
                     <h4 className="font-semibold text-slate-900">{detailProduct.productName}</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {detailProduct.categoryName} &middot; {detailProduct.unit}
+                      {detailProduct.categoryName} &middot; {getUnitDisplay(detailProduct.unit, language)}
                     </p>
                     {detailProduct.description && (
                       <p className="text-xs text-slate-500 mt-1">{detailProduct.description}</p>
@@ -749,7 +749,7 @@ export function SupplierProducts() {
                 <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('yourPricing')}</h3>
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t('price')} (EGP)</label>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">{t('price')} ({t('currency')})</label>
                     <input type="number" min="0" step="0.01" value={detailForm.price || ''}
                       onChange={(e) => setDetailForm({ ...detailForm, price: parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
@@ -787,7 +787,7 @@ export function SupplierProducts() {
                     <Layers className="w-4 h-4 text-amber-600" />
                     <span className="text-sm font-semibold text-slate-900">{t('pricingTiers')}</span>
                     {tiers.length > 0 && (
-                      <span className="text-[11px] text-slate-500">({tiers.length})</span>
+                      <span className="text-[11px] text-slate-500">({toArabicNumeral(String(tiers.length), language)})</span>
                     )}
                   </div>
                   {tiersExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -815,15 +815,15 @@ export function SupplierProducts() {
                             <div className="flex-1 grid grid-cols-3 gap-4 text-sm">
                               <div>
                                 <span className="text-[11px] text-slate-500 block">{t('minQty')}</span>
-                                <span className="font-semibold text-slate-900">{tier.minQty}</span>
+                                <span className="font-semibold text-slate-900">{toArabicNumeral(String(tier.minQty), language)}</span>
                               </div>
                               <div>
                                 <span className="text-[11px] text-slate-500 block">{t('maxQty')}</span>
-                                <span className="font-semibold text-slate-900">{tier.maxQty ?? '∞'}</span>
+                                <span className="font-semibold text-slate-900">{tier.maxQty != null ? toArabicNumeral(String(tier.maxQty), language) : '∞'}</span>
                               </div>
                               <div>
                                 <span className="text-[11px] text-slate-500 block">{t('unitPrice')}</span>
-                                <span className="font-semibold text-slate-900">{tier.unitPrice} EGP</span>
+                                <span className="font-semibold text-slate-900">{toArabicNumeral(String(tier.unitPrice), language)} {t('currency')}</span>
                               </div>
                             </div>
                             <button onClick={() => handleEditTier(tier)} className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-100 transition-colors">
@@ -856,7 +856,7 @@ export function SupplierProducts() {
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-medium text-slate-600 mb-1">{t('unitPrice')} (EGP)</label>
+                          <label className="block text-[11px] font-medium text-slate-600 mb-1">{t('unitPrice')} ({t('currency')})</label>
                           <input type="number" min="0" step="0.01" value={tierForm.unitPrice || ''}
                             onChange={(e) => setTierForm({ ...tierForm, unitPrice: parseFloat(e.target.value) || 0 })}
                             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />

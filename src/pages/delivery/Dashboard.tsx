@@ -62,7 +62,7 @@ export function DeliveryPersonDashboard() {
     { label: T('activeDeliveries'), value: data.activeDeliveries, icon: Package, color: 'bg-blue-500' },
     { label: T('completedToday'), value: data.completedToday, icon: Clock, color: 'bg-green-500' },
     { label: T('rating'), value: data.rating.toFixed(1), icon: Star, color: 'bg-yellow-500' },
-    { label: T('earningsToday'), value: `${data.earningsToday.toFixed(2)} EGP`, icon: DollarSign, color: 'bg-indigo-500' },
+    { label: T('earningsToday'), value: `${data.earningsToday.toFixed(2)} ${T('currency')}`, icon: DollarSign, color: 'bg-indigo-500' },
   ] : [];
 
   return (
@@ -102,7 +102,7 @@ export function DeliveryPersonDashboard() {
                   <p className="text-sm font-medium text-slate-900">{req.orderTitle}</p>
                   <p className="text-xs text-slate-500">{req.supplierName} · {req.region}</p>
                   {req.proposedFee && (
-                    <p className="text-xs text-indigo-600 mt-1">{T('proposedFee')}: EGP {req.proposedFee}</p>
+                    <p className="text-xs text-indigo-600 mt-1">{T('proposedFee')}: {req.proposedFee} {T('currency')}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

@@ -5,7 +5,7 @@ import {
   Package, ShoppingCart, TrendingUp, Activity, FileText, Mail, Phone, Calendar,
   Shield, Star, ChevronDown, ChevronUp, Loader2, AlertTriangle, User
 } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, getUnitDisplay, toArabicNumeral } from '../../i18n';
 import { adminService, type AdminSupplier, type AdminSupplierDetail } from '../../services/admin.service';
 
 export function AdminSuppliers() {
@@ -156,7 +156,7 @@ export function AdminSuppliers() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{t('suppliers')}</h1>
-          <p className="text-sm text-slate-500 mt-1">{totalCount} {t('suppliersRegistered')}</p>
+          <p className="text-sm text-slate-500 mt-1">{toArabicNumeral(String(totalCount), language)} {t('suppliersRegistered')}</p>
         </div>
       </div>
 
@@ -165,28 +165,28 @@ export function AdminSuppliers() {
           <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center mb-2">
             <Store className="w-4 h-4 text-indigo-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{totalCount}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(totalCount), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('totalSuppliers')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center mb-2">
             <Clock className="w-4 h-4 text-amber-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{pendingCount}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(pendingCount), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('pendingApproval')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center mb-2">
             <CheckCircle className="w-4 h-4 text-emerald-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{approvedCount}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(approvedCount), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('active')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center mb-2">
             <Ban className="w-4 h-4 text-red-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{suspendedCount}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(suspendedCount), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('suspended')}</p>
         </div>
       </div>
@@ -246,7 +246,7 @@ export function AdminSuppliers() {
                     </div>
                   </td>
                   <td className="px-5 py-3.5 text-sm text-slate-600">{supplier.region || '-'}</td>
-                  <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">{supplier.totalProducts}</td>
+                  <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">{toArabicNumeral(String(supplier.totalProducts), language)}</td>
                   <td className="px-5 py-3.5">{statusBadge(supplier.status)}</td>
                   <td className="px-5 py-3.5 text-end">
                     <div className="flex items-center justify-end gap-1">
@@ -332,7 +332,7 @@ export function AdminSuppliers() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-slate-600">
                     <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span>{selectedSupplier.phone || '-'}</span>
+                    <span>{toArabicNumeral(selectedSupplier.phone || '-', language)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-slate-600">
                     <Clock className="w-4 h-4 text-slate-400 shrink-0" />
@@ -369,7 +369,7 @@ export function AdminSuppliers() {
                       <div className={`w-6 h-6 rounded ${stat.bg} flex items-center justify-center mb-1`}>
                         <stat.icon className={`w-3 h-3 ${stat.color}`} />
                       </div>
-                      <p className="text-lg font-bold text-slate-900">{stat.value}</p>
+                      <p className="text-lg font-bold text-slate-900">{toArabicNumeral(String(stat.value), language)}</p>
                       <p className="text-[10px] text-slate-500 mt-0.5">{stat.label}</p>
                     </div>
                   ))}
@@ -395,7 +395,7 @@ export function AdminSuppliers() {
                           <tr key={i}>
                             <td className="px-4 py-2.5 text-xs text-slate-700">{p.name}</td>
                             <td className="px-4 py-2.5 text-xs text-slate-500">{p.categoryName}</td>
-                            <td className="px-4 py-2.5 text-xs text-slate-700 text-end font-medium">{p.stock} {p.unit}</td>
+                            <td className="px-4 py-2.5 text-xs text-slate-700 text-end font-medium">{toArabicNumeral(String(p.stock), language)} {getUnitDisplay(p.unit, language)}</td>
                             <td className="px-4 py-2.5 text-xs text-slate-700 text-end font-medium">{formatCurrency(p.price)}</td>
                             <td className="px-4 py-2.5 text-end">
                               <button
@@ -403,7 +403,7 @@ export function AdminSuppliers() {
                                 disabled={!p.pricingTiers || p.pricingTiers.length === 0}
                                 className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 disabled:text-slate-300 disabled:cursor-not-allowed"
                               >
-                                {p.pricingTiers?.length || 0} tiers
+                                {toArabicNumeral(String(p.pricingTiers?.length || 0), language)} tiers
                                 {p.pricingTiers && p.pricingTiers.length > 0 && (
                                   expandedProduct === i ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
                                 )}
@@ -426,8 +426,8 @@ export function AdminSuppliers() {
                                 <tbody>
                                   {selectedSupplier.products[expandedProduct].pricingTiers.map((tier, ti) => (
                                     <tr key={ti} className="border-b border-slate-100 last:border-0">
-                                      <td className="py-1.5 text-slate-700">{tier.minQty}</td>
-                                      <td className="py-1.5 text-slate-700">{tier.maxQty ?? '∞'}</td>
+                                      <td className="py-1.5 text-slate-700">{toArabicNumeral(String(tier.minQty), language)}</td>
+                                      <td className="py-1.5 text-slate-700">{tier.maxQty != null ? toArabicNumeral(String(tier.maxQty), language) : '∞'}</td>
                                       <td className="py-1.5 text-slate-700 text-end font-medium">{formatCurrency(tier.unitPrice)}</td>
                                     </tr>
                                   ))}

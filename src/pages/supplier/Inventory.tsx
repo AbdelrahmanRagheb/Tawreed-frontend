@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Search, AlertTriangle, CheckCircle, Package } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, getUnitDisplay, toArabicNumeral } from '../../i18n';
 import { supplierService, type SupplierProductListItem } from '../../services/supplier.service';
 
 export function SupplierInventory() {
@@ -56,19 +56,19 @@ export function SupplierInventory() {
       {/* Alert Cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-2xl font-bold text-slate-900">{products.length}</p>
+          <p className="text-2xl font-bold text-slate-900">{toArabicNumeral(String(products.length), language)}</p>
           <p className="text-xs text-slate-500 mt-1">{t('totalProducts')}</p>
         </div>
         <div className="bg-amber-50 rounded-xl border border-amber-200 p-4">
           <div className="flex items-center gap-2">
-            <p className="text-2xl font-bold text-amber-700">{lowCount + criticalCount}</p>
+            <p className="text-2xl font-bold text-amber-700">{toArabicNumeral(String(lowCount + criticalCount), language)}</p>
             <AlertTriangle className="w-4 h-4 text-amber-500" />
           </div>
           <p className="text-xs text-amber-700 mt-1">{t('lowStock')}</p>
         </div>
         <div className="bg-red-50 rounded-xl border border-red-200 p-4">
           <div className="flex items-center gap-2">
-            <p className="text-2xl font-bold text-red-700">{criticalCount}</p>
+            <p className="text-2xl font-bold text-red-700">{toArabicNumeral(String(criticalCount), language)}</p>
             <AlertTriangle className="w-4 h-4 text-red-500" />
           </div>
           <p className="text-xs text-red-700 mt-1">{t('criticalStock')}</p>
@@ -150,14 +150,14 @@ export function SupplierInventory() {
                         <span className={`text-sm font-semibold ${
                           stockStatus === 'out' ? 'text-red-600' : stockStatus === 'critical' ? 'text-red-500' : stockStatus === 'low' ? 'text-amber-600' : 'text-slate-900'
                         }`}>
-                          {product.stock} {unit}
+                          {toArabicNumeral(String(product.stock), language)} {getUnitDisplay(unit, language)}
                         </span>
                         {(stockStatus === 'critical' || stockStatus === 'out') && (
                           <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">{product.price} EGP</td>
+                    <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">{toArabicNumeral(String(product.price), language)} {t('currency')}</td>
                     <td className="px-5 py-3.5">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold ${cfg.bg} ${cfg.color}`}>
                         {stockStatus === 'ok' ? <CheckCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}

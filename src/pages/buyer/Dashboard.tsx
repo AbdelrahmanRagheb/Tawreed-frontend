@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, TrendingUp, MapPin, Users, Calendar, Bell, DollarSign, Percent, ArrowRight, Clock, AlertCircle } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { useAuth } from '../../contexts/AuthContext';
 import { buyerService, type BuyerDashboardResponse } from '../../services/buyer.service';
 
@@ -56,7 +56,7 @@ export function BuyerDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-emerald-100 text-xs font-semibold uppercase tracking-wider">{t('totalSavings')}</p>
-            <p className="text-3xl md:text-4xl font-black mt-1">EGP {totalSavings.toLocaleString()}</p>
+            <p className="text-3xl md:text-4xl font-black mt-1">{toArabicNumeral(totalSavings.toLocaleString(), language)} {t('currency')}</p>
             <p className="text-emerald-200 text-xs mt-1.5 flex items-center gap-1">
               <Percent className="w-3.5 h-3.5" />
               {t('saveUpTo')} 20% {language === 'en' ? 'on bulk orders' : 'على الطلبات بالجملة'}
@@ -86,13 +86,13 @@ export function BuyerDashboard() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-slate-900 truncate">{order.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{order.productName} x{order.quantity} · {t('host')}: {order.creatorName}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{order.productName} x{toArabicNumeral(String(order.quantity), language)} · {t('host')}: {order.creatorName}</p>
                       <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-500">
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3 h-3" /> {order.region}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3" /> {order.currentParticipants}
+                          <Users className="w-3 h-3" /> {toArabicNumeral(String(order.currentParticipants), language)}
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" /> {new Date(order.deadline).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
@@ -112,7 +112,7 @@ export function BuyerDashboard() {
               <Clock className="w-4 h-4 text-indigo-600" />
               <h2 className="text-sm font-bold text-slate-900">{t('myActiveOrders')}</h2>
             </div>
-            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-semibold">{activeOrders.length}</span>
+            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-semibold">{toArabicNumeral(String(activeOrders.length), language)}</span>
           </div>
           {activeOrders.length === 0 ? (
             <div className="p-8 text-center text-sm text-slate-500">{t('noNotifications')}</div>
@@ -123,13 +123,13 @@ export function BuyerDashboard() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-slate-900">{order.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{order.productCount} {t('items')}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{toArabicNumeral(String(order.productCount), language)} {t('items')}</p>
                       <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" /> {new Date(order.deadline).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
                         </span>
                         <span className="flex items-center gap-1">
-                          <DollarSign className="w-3 h-3" /> EGP {order.totalValue.toLocaleString()}
+                          <DollarSign className="w-3 h-3" /> {toArabicNumeral(order.totalValue.toLocaleString(), language)} {t('currency')}
                         </span>
                       </div>
                     </div>
@@ -161,7 +161,7 @@ export function BuyerDashboard() {
             <Bell className="w-4 h-4 text-amber-600" />
             <h2 className="text-sm font-bold text-slate-900">{t('notifications')}</h2>
             {unreadNotificationCount > 0 && (
-              <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">{unreadNotificationCount}</span>
+              <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">{toArabicNumeral(String(unreadNotificationCount), language)}</span>
             )}
           </div>
           <button onClick={() => navigate('/buyer/orders')} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">{t('viewAll')} →</button>
@@ -212,7 +212,7 @@ export function BuyerDashboard() {
               <div className="p-3">
                 <p className="text-xs font-semibold text-slate-900 truncate">{product.name}</p>
                 <div className="flex items-center justify-between mt-1.5">
-                  <p className="text-sm font-bold text-indigo-600">EGP {product.price.toFixed(2)}</p>
+                  <p className="text-sm font-bold text-indigo-600">{toArabicNumeral(product.price.toFixed(2), language)} {t('currency')}</p>
                   <p className="text-[10px] text-slate-500">{product.categoryName}</p>
                 </div>
               </div>

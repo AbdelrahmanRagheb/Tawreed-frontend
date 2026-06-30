@@ -9,6 +9,32 @@ import React, {
 
 export type Language = "en" | "ar";
 
+const unitDisplayNames: Record<string, { en: string; ar: string }> = {
+  kg: { en: "kg", ar: "كجم" },
+  g: { en: "g", ar: "جم" },
+  l: { en: "L", ar: "لتر" },
+  ml: { en: "ml", ar: "مل" },
+  pc: { en: "pc", ar: "قطعة" },
+  pkt: { en: "pkt", ar: "علبة" },
+  ctn: { en: "ctn", ar: "كرتونة" },
+  btl: { en: "btl", ar: "زجاجة" },
+  pk: { en: "pk", ar: "رزمة" },
+  unit: { en: "UNIT", ar: "وحدة" },
+  jar: { en: "JAR", ar: "برطمان" },
+  box: { en: "BOX", ar: "صندوق" },
+  tin: { en: "TIN", ar: "علبة" },
+  bag: { en: "BAG", ar: "كيس" },
+};
+
+export function getUnitDisplay(unit: string, language: Language): string {
+  return unitDisplayNames[unit.toLowerCase()]?.[language] || unit;
+}
+
+export function toArabicNumeral(str: string, language: Language): string {
+  if (language !== "ar") return str;
+  return str.replace(/[0-9]/g, (d) => String.fromCharCode(0x0660 + parseInt(d)));
+}
+
 export const translations = {
   appTitle: { en: "Tawreed", ar: "توريد" },
   searchPlaceholder: {
@@ -513,6 +539,18 @@ export const translations = {
   taxId: { en: "Tax ID", ar: "الرقم الضريبي" },
   commercialRegistrationNo: { en: "Commercial Register No.", ar: "السجل التجاري" },
   registrationDocs: { en: "Registration Documents", ar: "المستندات الرسمية" },
+  statusOpen: { en: "Open", ar: "مفتوح" },
+  statusClosed: { en: "Closed", ar: "مغلق" },
+  statusCompleted: { en: "Completed", ar: "مكتمل" },
+  statusCancelled: { en: "Cancelled", ar: "ملغي" },
+  noOrdersFound: { en: "No orders found", ar: "لم يتم العثور على طلبات" },
+  productName: { en: "Product Name", ar: "اسم المنتج" },
+  target: { en: "Target", ar: "المستهدف" },
+  totalPrice: { en: "Total Price", ar: "السعر الإجمالي" },
+  marketPrice: { en: "Market Price", ar: "سعر السوق" },
+  timeline: { en: "Timeline", ar: "الجدول الزمني" },
+  manageProducts: { en: "Manage Products", ar: "إدارة المنتجات" },
+  yourProducts: { en: "Your Products", ar: "منتجاتك" },
   profileUpdated: {
     en: "Profile updated successfully",
     ar: "تم تحديث الملف الشخصي بنجاح",
@@ -746,9 +784,10 @@ export const translations = {
   },
   deliveryperson: { en: "Delivery Person", ar: "مندوب توصيل" },
   selectVehicleType: { en: "Select vehicle type", ar: "اختر نوع المركبة" },
+  currency: { en: "EGP", ar: "ج.م" },
   baseDeliveryFee: {
-    en: "Base delivery fee (EGP)",
-    ar: "رسوم التوصيل الأساسية (جنيه)",
+    en: "Base delivery fee",
+    ar: "رسوم التوصيل الأساسية",
   },
   coverageRegion: { en: "Coverage Region", ar: "منطقة التغطية" },
   fillRequired: {
@@ -763,6 +802,19 @@ export const translations = {
   creatingAccount: { en: "Creating account...", ar: "جاري إنشاء الحساب..." },
   hasAccount: { en: "Already have an account?", ar: "لديك حساب بالفعل؟" },
   signIn: { en: "Sign in", ar: "تسجيل الدخول" },
+  remember: { en: "Remember me", ar: "تذكرني" },
+  forgotPassword: { en: "Forgot password?", ar: "نسيت كلمة المرور؟" },
+  or: { en: "OR", ar: "أو" },
+  continueWithGoogle: { en: "Continue with Google", ar: "المتابعة باستخدام Google" },
+  tagline: { en: "The smart supply platform for retailers", ar: "منصة التوريد الذكية للمتاجر" },
+  feature1: { en: "Fast & reliable delivery", ar: "توصيل سريع وموثوق" },
+  feature2: { en: "Thousands of suppliers at your fingertips", ar: "آلاف الموردين بين يديك" },
+  feature3: { en: "Effortless order management", ar: "إدارة الطلبات بسهولة" },
+  showPassword: { en: "Show password", ar: "إظهار كلمة المرور" },
+  hidePassword: { en: "Hide password", ar: "إخفاء كلمة المرور" },
+  invalidEmail: { en: "Please enter a valid email", ar: "البريد الإلكتروني غير صحيح" },
+  requiredPassword: { en: "Password is required", ar: "كلمة المرور مطلوبة" },
+  successMessage: { en: "Signed in successfully ✓", ar: "تم تسجيل الدخول بنجاح ✓" },
   remove: { en: "Remove", ar: "إزالة" },
   closeMenu: { en: "Close menu", ar: "إغلاق القائمة" },
   menu: { en: "Menu", ar: "القائمة" },

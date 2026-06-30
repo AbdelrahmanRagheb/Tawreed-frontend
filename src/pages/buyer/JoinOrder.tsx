@@ -5,7 +5,7 @@ import {
   MapPin, Calendar, Filter, AlertTriangle,
   ArrowLeft, UserPlus,
 } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, getUnitDisplay, toArabicNumeral } from '../../i18n';
 import { useAuth } from '../../contexts/AuthContext';
 import { publicService, type PublicProduct, type PublicCategory } from '../../services/public.service';
 import { buyerService, type OrderDetailResponse, type Participant, type ParticipantItem } from '../../services/buyer.service';
@@ -265,7 +265,7 @@ export function JoinOrder() {
                     <span>{t('category')}: {product.categoryName}</span>
                   </div>
                   <div className="mt-1 flex items-center justify-between">
-                    <p className="text-lg font-bold text-slate-900">{product.price} EGP</p>
+                    <p className="text-lg font-bold text-slate-900">{toArabicNumeral(String(product.price), language)} {t('currency')}</p>
                     {order?.products.some((op) => op.productId === product.id) && (
                       <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-semibold">
                         {t('inOrder')}
@@ -333,16 +333,16 @@ export function JoinOrder() {
                           <p className="text-sm font-semibold text-slate-900 truncate">{product.productName}</p>
                           {otherQty > 0 && (
                             <span className="text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
-                              {t('others')} {otherQty}
+                              {t('others')} {toArabicNumeral(String(otherQty), language)}
                             </span>
                           )}
                           {myQty > 0 && (
                             <span className="text-[11px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-full font-semibold shrink-0">
-                              {t('me')} {myQty}
+                              {t('me')} {toArabicNumeral(String(myQty), language)}
                             </span>
                           )}
                         </div>
-                        <span className="text-[11px] font-medium text-slate-400 shrink-0">{product.targetQuantity} {product.unit}</span>
+                        <span className="text-[11px] font-medium text-slate-400 shrink-0">{toArabicNumeral(String(product.targetQuantity), language)} {getUnitDisplay(product.unit, language)}</span>
                         {myQty > 0 ? (
                           <span className="w-7 h-7 flex items-center justify-center rounded-full bg-emerald-50 text-emerald-500 shrink-0">
                             <Check className="w-4 h-4" />
@@ -374,7 +374,7 @@ export function JoinOrder() {
                   {t('yourItems')}
                 </h2>
                 <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-semibold">
-                  {cart.length} {t('productsAdded')}
+                  {toArabicNumeral(String(cart.length), language)} {t('productsAdded')}
                 </span>
               </div>
 
@@ -431,11 +431,11 @@ export function JoinOrder() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-[11px] text-slate-500">{t('products')}</p>
-                  <p className="text-lg font-bold text-slate-900">{cart.length}</p>
+                  <p className="text-lg font-bold text-slate-900">{toArabicNumeral(String(cart.length), language)}</p>
                 </div>
                 <div>
                   <p className="text-[11px] text-slate-500">{t('totalQuantity')}</p>
-                  <p className="text-lg font-bold text-slate-900">{totalQuantity}</p>
+                  <p className="text-lg font-bold text-slate-900">{toArabicNumeral(String(totalQuantity), language)}</p>
                 </div>
               </div>
             </div>
@@ -459,7 +459,7 @@ export function JoinOrder() {
                 <span>{t('category')}: {modalProduct.categoryName}</span>
               </div>
               <div className="flex items-center justify-between mt-3">
-                <p className="text-sm text-slate-500">{t('currentPrice')}: <span className="font-bold text-slate-900">{modalProduct.price} EGP</span></p>
+                <p className="text-sm text-slate-500">{t('currentPrice')}: <span className="font-bold text-slate-900">{toArabicNumeral(String(modalProduct.price), language)} {t('currency')}</span></p>
               </div>
 
               <div className="mt-4 pt-4 border-t border-slate-100">
@@ -484,10 +484,10 @@ export function JoinOrder() {
                   >
                     <Plus className="w-4 h-4" />
                   </button>
-                  <span className="text-xs text-slate-500">{modalProduct.unit || 'UNIT'}</span>
+                  <span className="text-xs text-slate-500">{getUnitDisplay(modalProduct.unit || 'UNIT', language)}</span>
                 </div>
                 <p className="text-xs text-slate-400 mt-2">
-                  {t('subtotal')}: <span className="font-bold text-slate-700">{modalProduct.price * modalQty} EGP</span>
+                  {t('subtotal')}: <span className="font-bold text-slate-700">{toArabicNumeral(String(modalProduct.price * modalQty), language)} {t('currency')}</span>
                 </p>
               </div>
 

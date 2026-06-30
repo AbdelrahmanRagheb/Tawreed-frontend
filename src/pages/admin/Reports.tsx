@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BarChart3, Download, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { adminService, type AdminDashboardResponse } from '../../services/admin.service';
 
 export function AdminReports() {
@@ -70,18 +70,18 @@ export function AdminReports() {
                 report.growth >= 0 ? 'text-emerald-600' : 'text-red-600'
               }`}>
                 {report.growth >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                {report.growth >= 0 ? '+' : ''}{report.growth}%
+                {toArabicNumeral(`${report.growth >= 0 ? '+' : ''}${report.growth}%`, language)}
               </span>
             </div>
 
             <div className="flex items-center justify-between py-3">
               <div>
                 <p className="text-2xl font-bold text-slate-900">
-                  {report.type === 'Financial' || report.type === 'مالي'
-                    ? `${(report.total / 1000).toFixed(1)}K`
-                    : report.total.toLocaleString()}
+                    {toArabicNumeral(report.type === 'Financial' || report.type === 'مالي'
+                      ? `${(report.total / 1000).toFixed(1)}K`
+                      : report.total.toLocaleString(), language)}
                 </p>
-                <p className="text-xs text-slate-500 mt-0.5">{t('download')} {report.generatedAt}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{t('download')} {toArabicNumeral(report.generatedAt, language)}</p>
               </div>
               <button className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
                 <Download className="w-3.5 h-3.5" />

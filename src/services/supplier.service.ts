@@ -87,11 +87,13 @@ export interface RegistrationStatus {
 }
 
 export interface SupplierOrderItem {
+  groupOrderItemId: string;
   productId: string;
   productName: string;
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  itemStatus: string;
 }
 
 export interface PricingTier {

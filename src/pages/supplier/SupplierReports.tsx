@@ -58,7 +58,7 @@ export function SupplierReports() {
           <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center mb-2">
             <DollarSign className="w-5 h-5 text-emerald-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{kpi.totalRevenue.toLocaleString()} EGP</p>
+          <p className="text-xl font-bold text-slate-900">{kpi.totalRevenue.toLocaleString()} {t('currency')}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('totalRevenue')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">

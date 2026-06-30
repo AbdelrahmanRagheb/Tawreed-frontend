@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Store, ShoppingCart, DollarSign, Clock, AlertCircle } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { adminService, type AdminDashboardResponse } from '../../services/admin.service';
 
 export function AdminDashboard() {
@@ -40,11 +40,11 @@ export function AdminDashboard() {
   const { kpi, recentOrders, pendingSupplierApplications } = data;
 
   const stats = [
-    { icon: Users, label: t('totalUsers'), value: kpi.totalUsers.toLocaleString(), color: 'text-indigo-600', bg: 'bg-indigo-100', path: '/admin/buyers' },
-    { icon: Clock, label: t('pendingApproval'), value: kpi.pendingSuppliers.toString(), color: 'text-amber-600', bg: 'bg-amber-100', path: '/admin/suppliers?status=PendingApproval' },
-    { icon: Store, label: t('totalSuppliers'), value: kpi.totalSuppliers.toString(), color: 'text-emerald-600', bg: 'bg-emerald-100', path: '/admin/suppliers' },
-    { icon: ShoppingCart, label: t('orders'), value: kpi.totalOrders.toString(), color: 'text-blue-600', bg: 'bg-blue-100', path: '/admin/orders' },
-    { icon: DollarSign, label: 'Revenue', value: `EGP ${(kpi.newUsersThisMonth * 1000).toLocaleString()}`, color: 'text-amber-600', bg: 'bg-amber-100' },
+    { icon: Users, label: t('totalUsers'), value: toArabicNumeral(kpi.totalUsers.toLocaleString(), language), color: 'text-indigo-600', bg: 'bg-indigo-100', path: '/admin/buyers' },
+    { icon: Clock, label: t('pendingApproval'), value: toArabicNumeral(kpi.pendingSuppliers.toString(), language), color: 'text-amber-600', bg: 'bg-amber-100', path: '/admin/suppliers?status=PendingApproval' },
+    { icon: Store, label: t('totalSuppliers'), value: toArabicNumeral(kpi.totalSuppliers.toString(), language), color: 'text-emerald-600', bg: 'bg-emerald-100', path: '/admin/suppliers' },
+    { icon: ShoppingCart, label: t('orders'), value: toArabicNumeral(kpi.totalOrders.toString(), language), color: 'text-blue-600', bg: 'bg-blue-100', path: '/admin/orders' },
+    { icon: DollarSign, label: 'Revenue', value: toArabicNumeral(`${(kpi.newUsersThisMonth * 1000).toLocaleString()} ${t('currency')}`, language), color: 'text-amber-600', bg: 'bg-amber-100' },
   ];
 
   return (
@@ -77,7 +77,7 @@ export function AdminDashboard() {
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-sm font-bold text-slate-900">{t('suppliersApproval')}</h2>
-            <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{pendingSupplierApplications.length} {t('pending')}</span>
+            <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{toArabicNumeral(String(pendingSupplierApplications.length), language)} {t('pending')}</span>
           </div>
           {pendingSupplierApplications.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-slate-500">No pending applications</div>
@@ -91,7 +91,7 @@ export function AdminDashboard() {
                       <Store className="w-4 h-4 text-amber-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{s.companyName || s.name || `Pending #${idx + 1}`}</p>
+                      <p className="text-sm font-semibold text-slate-900">{s.companyName || s.name || toArabicNumeral(`Pending #${idx + 1}`, language)}</p>
                     </div>
                   </div>
                   <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">{t('pending')}</span>
@@ -114,7 +114,7 @@ export function AdminDashboard() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{order.title}</p>
-                    <p className="text-[11px] text-slate-500">EGP {order.totalAmount.toLocaleString()} • {order.buyerName}</p>
+                    <p className="text-[11px] text-slate-500">{toArabicNumeral(order.totalAmount.toLocaleString(), language)} {t('currency')} • {order.buyerName}</p>
                   </div>
                 </div>
                 <span className="text-[10px] font-semibold capitalize text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">{order.status}</span>

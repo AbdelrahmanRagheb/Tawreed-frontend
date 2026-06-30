@@ -8,6 +8,7 @@ export interface PublicProduct {
   categoryName: string;
   unitId: string;
   unit: string;
+  marketPrice: number | null;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -26,6 +27,13 @@ export interface PublicBusinessType {
   id: string;
   nameAr: string;
   nameEn: string;
+}
+
+export interface PublicUnit {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  symbol: string;
 }
 
 export interface PublicRegion {
@@ -67,6 +75,9 @@ export const publicService = {
 
   listBusinessTypes: () =>
     http.get<PublicBusinessType[]>('/business-types'),
+
+  listUnits: () =>
+    http.get<PublicUnit[]>('/units'),
 
   listCategories: () =>
     http.get<PublicCategory[]>('/categories'),

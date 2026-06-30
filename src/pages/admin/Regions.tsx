@@ -25,7 +25,7 @@ import {
   Minimize2,
   Shield,
 } from "lucide-react";
-import { useLanguage } from "../../i18n";
+import { useLanguage, toArabicNumeral } from "../../i18n";
 import {
   adminService,
   type RegionTreeNode,
@@ -629,13 +629,13 @@ export function AdminRegions() {
                   <div className="flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
                     <span className="flex items-center gap-1 text-green-700 font-bold">
                       <Building2 className="w-3 h-3" />
-                      {directCities} {language === "ar" ? "مركز / مدينة" : "Center"}
+                      {toArabicNumeral(String(directCities), language)} {language === "ar" ? "مركز / مدينة" : "Center"}
                       {directCities !== 1 && language === "en" ? "s" : ""}
                     </span>
                     <span className="text-slate-300">|</span>
                     <span className="flex items-center gap-1 text-amber-700 font-bold">
                       <Home className="w-3 h-3" />
-                      {totalVillages} {language === "ar" ? "قرية / منطقة" : "Locality"}
+                      {toArabicNumeral(String(totalVillages), language)} {language === "ar" ? "قرية / منطقة" : "Locality"}
                       {totalVillages !== 1 && language === "en" ? "ies" : "y"}
                     </span>
                   </div>
@@ -765,7 +765,7 @@ export function AdminRegions() {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {stats.gov}
+                  {toArabicNumeral(String(stats.gov), language)}
                 </span>
                 <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
                   <CheckCircle2 className="w-3 h-3" />{" "}
@@ -790,7 +790,7 @@ export function AdminRegions() {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {stats.cities}
+                  {toArabicNumeral(String(stats.cities), language)}
                 </span>
                 <span className="text-xs font-medium text-slate-400">
                   {language === "ar"
@@ -818,7 +818,7 @@ export function AdminRegions() {
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {stats.villages}
+                  {toArabicNumeral(String(stats.villages), language)}
                 </span>
                 <span className="text-xs font-medium text-slate-400">
                   {language === "ar"
