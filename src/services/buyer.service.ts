@@ -200,6 +200,8 @@ export interface BuyerProfile {
   groupRegionId: string | null;
   groupRegionNameAr: string;
   groupRegionNameEn: string;
+  defaultDeadlineDays: number;
+  urgentDeadlineHours: number;
 }
 
 export interface BuyerUpdateProfileRequest {

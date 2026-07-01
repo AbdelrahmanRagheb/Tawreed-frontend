@@ -1,5 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
-import { useLanguage } from '../i18n';
+import { useLanguage, toArabicNumeral } from '../i18n';
 
 interface ErrorDisplayProps {
   message: string;
@@ -9,7 +9,7 @@ interface ErrorDisplayProps {
 }
 
 export function ErrorDisplay({ message, statusCode, onRetry, fullPage }: ErrorDisplayProps) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   const content = (
     <div className="flex flex-col items-center justify-center gap-4">
@@ -17,7 +17,7 @@ export function ErrorDisplay({ message, statusCode, onRetry, fullPage }: ErrorDi
         <AlertTriangle className="w-8 h-8 text-red-500" />
       </div>
       {statusCode && (
-        <span className="text-sm font-mono text-gray-400">Error {statusCode}</span>
+        <span className="text-sm font-mono text-gray-400">Error {toArabicNumeral(String(statusCode), language)}</span>
       )}
       <p className="text-sm text-gray-600 text-center max-w-md">{message}</p>
       {onRetry && (

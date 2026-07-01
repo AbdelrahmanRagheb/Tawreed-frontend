@@ -1,5 +1,5 @@
 import { Menu, Search, ShoppingCart, User, Globe } from 'lucide-react';
-import { useLanguage } from '../i18n';
+import { useLanguage, toArabicNumeral } from '../i18n';
 
 export function Navbar() {
   const { language, setLanguage, t } = useLanguage();
@@ -47,7 +47,7 @@ export function Navbar() {
               <button className="relative text-slate-500 hover:text-indigo-600 transition-colors">
                 <ShoppingCart className="w-6 h-6" />
                 <span className="absolute -top-1.5 -end-1.5 bg-indigo-600 text-white text-[10px] sm:text-xs font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center border-2 border-white">
-                  3
+                  {toArabicNumeral('3', language)}
                 </span>
               </button>
               {/* Mobile Menu Icon */}

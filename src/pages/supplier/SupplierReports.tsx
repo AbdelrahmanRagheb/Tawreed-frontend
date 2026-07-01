@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DollarSign, ShoppingCart, TrendingUp, Package, Download, AlertTriangle } from 'lucide-react';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { supplierService, type SupplierDashboardResponse } from '../../services/supplier.service';
 
 export function SupplierReports() {
@@ -58,28 +58,28 @@ export function SupplierReports() {
           <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center mb-2">
             <DollarSign className="w-5 h-5 text-emerald-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{kpi.totalRevenue.toLocaleString()} {t('currency')}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(kpi.totalRevenue.toLocaleString(), language)} {t('currency')}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('totalRevenue')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center mb-2">
             <ShoppingCart className="w-5 h-5 text-indigo-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{kpi.totalOrders}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(kpi.totalOrders), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('totalOrders')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center mb-2">
             <Package className="w-5 h-5 text-blue-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{kpi.totalProducts}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(kpi.totalProducts), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('activeProducts')}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center mb-2">
             <TrendingUp className="w-5 h-5 text-amber-600" />
           </div>
-          <p className="text-xl font-bold text-slate-900">{deliveryOverview.delivered}/{kpi.totalOrders}</p>
+          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(deliveryOverview.delivered), language)}/{toArabicNumeral(String(kpi.totalOrders), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('completedOrders')}</p>
         </div>
       </div>
@@ -99,7 +99,7 @@ export function SupplierReports() {
               <div key={item.label}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-slate-600">{item.label}</span>
-                  <span className="text-xs font-semibold text-slate-900">{item.value}</span>
+                  <span className="text-xs font-semibold text-slate-900">{toArabicNumeral(String(item.value), language)}</span>
                 </div>
                 <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full ${item.color}`} style={{ width: `${item.pct}%` }} />

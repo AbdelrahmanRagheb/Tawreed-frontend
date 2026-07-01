@@ -69,6 +69,8 @@ export function CreateOrder() {
   const [groupRegionId, setGroupRegionId] = useState("");
   const [groupRegionNameAr, setGroupRegionNameAr] = useState("");
   const [groupRegionNameEn, setGroupRegionNameEn] = useState("");
+  const [defaultDeadlineDays, setDefaultDeadlineDays] = useState(3);
+  const [urgentDeadlineHours, setUrgentDeadlineHours] = useState(6);
   const [regionChildren, setRegionChildren] = useState<PublicRegion[]>([]);
   const [showRegionModal, setShowRegionModal] = useState(false);
   const [loadingChildren, setLoadingChildren] = useState(false);
@@ -174,7 +176,15 @@ export function CreateOrder() {
           })();
         }
 
-        if (resumeDraft) {
+	        // Set deadline settings from profile
+	        setDefaultDeadlineDays(
+	          profileRes.data.defaultDeadlineDays ?? 3,
+	        );
+	        setUrgentDeadlineHours(
+	          profileRes.data.urgentDeadlineHours ?? 6,
+	        );
+
+	        if (resumeDraft) {
           buyerService
             .getOrderDetail(resumeDraft.id)
             .then((detailRes) => {
@@ -445,7 +455,7 @@ export function CreateOrder() {
                     : 'bg-white text-slate-500 hover:bg-slate-50'
                 }`}
               >
-                Normal
+                {language === 'ar' ? `عادي (${defaultDeadlineDays} أيام)` : `Normal (${defaultDeadlineDays}d)`}
               </button>
               <button
                 type="button"
@@ -456,7 +466,7 @@ export function CreateOrder() {
                     : 'bg-white text-slate-500 hover:bg-slate-50'
                 }`}
               >
-                Urgent
+                {language === 'ar' ? `عاجل (${urgentDeadlineHours} ساعات)` : `Urgent (${urgentDeadlineHours}h)`}
               </button>
             </div>
           </div>

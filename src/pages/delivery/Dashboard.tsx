@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Package, Star, DollarSign, Clock, Truck, Check, X } from 'lucide-react';
 import { deliveryPersonService, DeliveryPersonDashboardData, PendingDeliveryRequest } from '../../services/deliveryPerson.service';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 
 export function DeliveryPersonDashboard() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const T = (key: string) => t(key as any);
   const navigate = useNavigate();
   const [data, setData] = useState<DeliveryPersonDashboardData | null>(null);
@@ -59,10 +59,10 @@ export function DeliveryPersonDashboard() {
   if (error) return <div className="p-6 text-red-500">{error}</div>;
 
   const stats = data ? [
-    { label: T('activeDeliveries'), value: data.activeDeliveries, icon: Package, color: 'bg-blue-500' },
-    { label: T('completedToday'), value: data.completedToday, icon: Clock, color: 'bg-green-500' },
-    { label: T('rating'), value: data.rating.toFixed(1), icon: Star, color: 'bg-yellow-500' },
-    { label: T('earningsToday'), value: `${data.earningsToday.toFixed(2)} ${T('currency')}`, icon: DollarSign, color: 'bg-indigo-500' },
+    { label: T('activeDeliveries'), value: toArabicNumeral(String(data.activeDeliveries), language), icon: Package, color: 'bg-blue-500' },
+    { label: T('completedToday'), value: toArabicNumeral(String(data.completedToday), language), icon: Clock, color: 'bg-green-500' },
+    { label: T('rating'), value: toArabicNumeral(data.rating.toFixed(1), language), icon: Star, color: 'bg-yellow-500' },
+    { label: T('earningsToday'), value: `${toArabicNumeral(data.earningsToday.toFixed(2), language)} ${T('currency')}`, icon: DollarSign, color: 'bg-indigo-500' },
   ] : [];
 
   return (
@@ -93,7 +93,7 @@ export function DeliveryPersonDashboard() {
         <div className="bg-white rounded-xl border border-amber-200 p-6">
           <h2 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
             <Clock className="w-4 h-4 text-amber-600" />
-            {T('pendingRequests')} ({requests.length})
+            {T('pendingRequests')} ({toArabicNumeral(String(requests.length), language)})
           </h2>
           <div className="space-y-3">
             {requests.map((req) => (
@@ -102,7 +102,7 @@ export function DeliveryPersonDashboard() {
                   <p className="text-sm font-medium text-slate-900">{req.orderTitle}</p>
                   <p className="text-xs text-slate-500">{req.supplierName} · {req.region}</p>
                   {req.proposedFee && (
-                    <p className="text-xs text-indigo-600 mt-1">{T('proposedFee')}: {req.proposedFee} {T('currency')}</p>
+                    <p className="text-xs text-indigo-600 mt-1">{T('proposedFee')}: {toArabicNumeral(String(req.proposedFee), language)} {T('currency')}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ClipboardList, MapPin, Calendar, Eye } from 'lucide-react';
 import { deliveryPersonService, DeliveryPersonDeliveryDto } from '../../services/deliveryPerson.service';
-import { useLanguage } from '../../i18n';
+import { useLanguage, toArabicNumeral } from '../../i18n';
 import { cn } from '../../lib/utils';
 
 const statusColors: Record<string, string> = {
@@ -15,7 +15,7 @@ const statusColors: Record<string, string> = {
 };
 
 export function DeliveryPersonDeliveries() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const T = (key: string) => t(key as any);
   const navigate = useNavigate();
   const [deliveries, setDeliveries] = useState<DeliveryPersonDeliveryDto[]>([]);
@@ -75,7 +75,7 @@ export function DeliveryPersonDeliveries() {
                     <Calendar className="w-4 h-4" /> {new Date(d.scheduledAt).toLocaleDateString()}
                   </span>
                 )}
-                <span>{d.participants?.length || 0} {T('participants')}</span>
+                <span>{toArabicNumeral(String(d.participants?.length || 0), language)} {T('participants')}</span>
               </div>
               <button
                 onClick={() => navigate(`/delivery/deliveries/${d.id}`)}

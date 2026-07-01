@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -25,8 +25,6 @@ import {
   Search,
   Filter,
   Loader2,
-  CheckSquare,
-  Square,
   Minus,
 } from "lucide-react";
 import { useLanguage, getUnitDisplay, toArabicNumeral } from "../../i18n";
@@ -34,6 +32,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import {
   buyerService,
   type OrderDetailResponse,
+  OrderProduct,
   type EligibleSupplier,
   type EligibleProduct,
   type AssignSupplierRequest,
@@ -56,6 +55,7 @@ function SupplierProfileModal({
   profile: SupplierPublicProfile;
   onClose: () => void;
 }) {
+  const { language, t } = useLanguage();
   const requiredProducts = profile.products.filter((p) => p.isRequiredByOrder);
   const otherProducts = profile.products.filter((p) => !p.isRequiredByOrder);
 
@@ -108,14 +108,14 @@ function SupplierProfileModal({
             <div className="flex items-center gap-2 text-xs">
               <span className="text-slate-500 font-medium px-2.5 py-1 bg-slate-50 rounded-md border border-slate-200/60">
                 {toArabicNumeral(String(profile.products.length), language)}{" "}
-                Catalog items
+                {t("catalogItems" as any)}
               </span>
 
               {requiredProducts.length > 0 && (
                 <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/80 flex items-center gap-1.5 font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   {toArabicNumeral(String(requiredProducts.length), language)}{" "}
-                  Match your order
+                  {t("matchYourOrder" as any)}
                 </span>
               )}
             </div>
@@ -129,10 +129,10 @@ function SupplierProfileModal({
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
                   <ShoppingCart className="w-3.5 h-3.5 text-emerald-600" />
-                  Required for your order
+                  {t("requiredForOrder" as any)}
                 </h3>
                 <span className="text-xs font-semibold text-emerald-700 bg-emerald-100/60 px-2.5 py-0.5 rounded-full">
-                  Priority
+                  {t("priority" as any)}
                 </span>
               </div>
 
@@ -153,11 +153,11 @@ function SupplierProfileModal({
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
                   <Layers className="w-3.5 h-3.5" />
-                  Other available products
+                  {t("otherAvailableProducts" as any)}
                 </h3>
                 <span className="text-xs text-slate-400 font-medium">
                   {toArabicNumeral(String(otherProducts.length), language)}{" "}
-                  items
+                  {t("items" as any)}
                 </span>
               </div>
 
@@ -237,7 +237,7 @@ function ProductCard({
             </p>
             {isRequired && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                <CheckCircle className="w-2.5 h-2.5" /> Required
+                <CheckCircle className="w-2.5 h-2.5" /> {t("required" as any)}
               </span>
             )}
           </div>
@@ -257,11 +257,11 @@ function ProductCard({
                 product.availableStock.toLocaleString(),
                 language,
               )}{" "}
-              in stock
+              {t("inStock" as any)}
             </span>
             {isRequired && product.orderRequestedQty != null && (
               <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5">
-                Order needs:{" "}
+                {t("orderNeeds" as any)}{" "}
                 {toArabicNumeral(String(product.orderRequestedQty), language)}{" "}
                 {getUnitDisplay(product.unit, language)}
               </span>
@@ -284,7 +284,7 @@ function ProductCard({
       {hasTiers && expanded && (
         <div className="border-t border-slate-100 px-3.5 pb-3.5 pt-2.5">
           <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
-            Pricing Tiers
+            {t("pricingTiers" as any)}
           </p>
           <div className="space-y-1.5">
             {product.pricingTiers.map((tier, idx) => (
@@ -299,7 +299,7 @@ function ProductCard({
                 <div className="flex items-center gap-2">
                   {tier.isCurrentTier && (
                     <span className="text-[10px] font-bold bg-white/20 rounded px-1.5 py-0.5 text-white">
-                      YOUR TIER
+                      {t("yourTier" as any)}
                     </span>
                   )}
                   <span
@@ -355,6 +355,7 @@ function ManageProductsModal({
       })
       .filter((p) => p.myQuantity > 0),
   );
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -671,6 +672,10 @@ function ManageProductsModal({
 }
 
 /* ─────────────────────────────────────────────
+   Product Supplier Picker Modal
+───────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────
    Main Page
 ───────────────────────────────────────────── */
 export function OrderDetail() {
@@ -692,13 +697,42 @@ export function OrderDetail() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [showManageModal, setShowManageModal] = useState(false);
 
-  const [assignTarget, setAssignTarget] = useState<string | null>(null);
-  const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState("");
+  const [assignSuccess, setAssignSuccess] = useState("");
+  const [assigning, setAssigning] = useState(false);
 
   const isCreator = user?.id === order?.creatorUserId;
   const deadlinePassed = order ? new Date(order.deadline) <= new Date() : false;
   const hasJoined = order?.isParticipant ?? false;
+
+  const bestSupplierPrices = useMemo(() => {
+    if (!eligibleSuppliers || eligibleSuppliers.length === 0)
+      return new Map<string, { price: number; supplierName: string }>();
+    const map = new Map<string, { price: number; supplierName: string }>();
+    for (const supplier of eligibleSuppliers) {
+      for (const cp of supplier.coveredProducts) {
+        const product = order?.products.find(
+          (p) => p.groupOrderItemId === cp.groupOrderItemId,
+        );
+        if (!product) continue;
+        const tier = cp.pricingTiers?.find(
+          (t) =>
+            product.targetQuantity >= t.minQty &&
+            (t.maxQty == null || product.targetQuantity <= t.maxQty),
+        );
+        const price = tier?.unitPrice ?? cp.unitPrice;
+        if (price == null) continue;
+        const existing = map.get(cp.groupOrderItemId);
+        if (!existing || price < existing.price) {
+          map.set(cp.groupOrderItemId, {
+            price,
+            supplierName: supplier.supplierName,
+          });
+        }
+      }
+    }
+    return map;
+  }, [eligibleSuppliers, order?.products]);
 
   const fetchOrder = () => {
     if (!id) return;
@@ -722,7 +756,7 @@ export function OrderDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (id && order && isCreator) {
+    if (id && order) {
       setLoadingSuppliers(true);
       buyerService
         .getEligibleSuppliers(id)
@@ -733,7 +767,8 @@ export function OrderDetail() {
   }, [id, order, isCreator]);
 
   const handleSupplierClick = async (supplierId: string) => {
-    if (!id || loadingProfile) return;
+    if (!id) return;
+    setSelectedProfile(null);
     setLoadingProfile(true);
     try {
       const res = await buyerService.getSupplierProfile(id, supplierId);
@@ -745,50 +780,46 @@ export function OrderDetail() {
     }
   };
 
-  const [selectedItemIds, setSelectedItemIds] = useState<
-    Record<string, string[]>
-  >({});
+  const [productSelection, setProductSelection] = useState<Record<string, string>>({});
 
-  const toggleItem = (supplierId: string, itemId: string) => {
-    setSelectedItemIds((prev) => {
-      const current = prev[supplierId] ?? [];
-      const exists = current.includes(itemId);
-      return {
-        ...prev,
-        [supplierId]: exists
-          ? current.filter((id) => id !== itemId)
-          : [...current, itemId],
-      };
+  const selectSupplier = (itemId: string, supplierId: string) => {
+    setProductSelection((prev) => {
+      if (prev[itemId] === supplierId) {
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      }
+      return { ...prev, [itemId]: supplierId };
     });
   };
 
-  const selectAllUnassigned = (supplierId: string, productIds: string[]) => {
-    setSelectedItemIds((prev) => ({
-      ...prev,
-      [supplierId]: productIds,
-    }));
-  };
-
-  const handleAssign = async (supplierId: string) => {
+  const handleAssignAll = async () => {
     if (!id) return;
-    const itemIds = selectedItemIds[supplierId];
-    if (!itemIds || itemIds.length === 0) {
+    const bySupplier: Record<string, string[]> = {};
+    for (const [itemId, supplierId] of Object.entries(productSelection)) {
+      if (!bySupplier[supplierId]) bySupplier[supplierId] = [];
+      bySupplier[supplierId].push(itemId);
+    }
+    const totalItems = Object.keys(productSelection).length;
+    if (totalItems === 0) {
       setAssignError("Please select at least one item to assign.");
       return;
     }
-    setAssigning(true);
     setAssignError("");
+    setAssignSuccess("");
+    setAssigning(true);
     try {
-      const request: AssignSupplierRequest = { supplierId, itemIds };
-      await buyerService.assignSupplier(id, request);
-      setAssignTarget(null);
-      setSelectedItemIds((prev) => ({ ...prev, [supplierId]: [] }));
+      for (const [supplierId, itemIds] of Object.entries(bySupplier)) {
+        const request: AssignSupplierRequest = { supplierId, itemIds };
+        await buyerService.assignSupplier(id, request);
+      }
+      setProductSelection({});
+      setAssignSuccess(language === "ar" ? "تم إرسال التعيينات. في انتظار رد الموردين." : "Assignments sent! Waiting for supplier responses.");
+      setTimeout(() => setAssignSuccess(""), 5000);
       fetchOrder();
     } catch (err: any) {
       setAssignError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Failed to assign supplier",
+        err?.response?.data?.message || err?.message || "Failed to assign supplier",
       );
     } finally {
       setAssigning(false);
@@ -862,23 +893,44 @@ export function OrderDetail() {
 
   const myParticipant = order.participants.find((p) => p.userId === user?.id);
   const myItems = myParticipant?.items ?? [];
+  const getEffectivePrice = (product: OrderProduct) =>
+    bestSupplierPrices.get(product.groupOrderItemId)?.price ?? product.marketPrice ?? product.unitPrice ?? 0;
+
   let myEstTotal = 0;
   myItems.forEach((item) => {
     const product = order.products.find(
       (p) => p.groupOrderItemId === item.groupOrderItemId,
     );
-    if (product?.marketPrice ?? product?.unitPrice != null) {
-      myEstTotal +=
-        (product.marketPrice ?? product.unitPrice ?? 0) * item.quantity;
+    if (product) {
+      myEstTotal += getEffectivePrice(product) * item.quantity;
+    }
+  });
+
+  // Creator's estimated total (residual quantity not taken by others)
+  let creatorEstTotal = 0;
+  order.products.forEach((p) => {
+    const creatorQty = Math.max(0, p.targetQuantity - p.currentQuantity);
+    if (creatorQty > 0) {
+      creatorEstTotal += getEffectivePrice(p) * creatorQty;
     }
   });
 
   return (
     <>
+      {loadingProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
+              <p className="text-sm text-slate-500">{t("loading" as any)}</p>
+            </div>
+          </div>
+        </div>
+      )}
       {selectedProfile && (
         <SupplierProfileModal
           profile={selectedProfile}
-          onClose={() => setSelectedProfile(null)}
+          onClose={() => { setSelectedProfile(null); setLoadingProfile(false); }}
         />
       )}
       {showManageModal && order && (
@@ -935,8 +987,12 @@ export function OrderDetail() {
                     const diffM = Math.floor((diffMs % 3600000) / 60000);
                     const label =
                       diffH >= 24
-                        ? `${toArabicNumeral(String(Math.floor(diffH / 24)), language)}d ${toArabicNumeral(String(diffH % 24), language)}h`
-                        : `${toArabicNumeral(String(diffH), language)}h ${toArabicNumeral(String(diffM), language)}m`;
+                        ? language === "ar"
+                          ? `${toArabicNumeral(String(Math.floor(diffH / 24)), language)} يوم ${toArabicNumeral(String(diffH % 24), language)} ساعة`
+                          : `${toArabicNumeral(String(Math.floor(diffH / 24)), language)}d ${toArabicNumeral(String(diffH % 24), language)}h`
+                        : language === "ar"
+                          ? `${toArabicNumeral(String(diffH), language)} ساعة ${toArabicNumeral(String(diffM), language)} دقيقة`
+                          : `${toArabicNumeral(String(diffH), language)}h ${toArabicNumeral(String(diffM), language)}m`;
                     return (
                       <span
                         className={`ml-2 inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${
@@ -968,7 +1024,7 @@ export function OrderDetail() {
                             String(order.products.length),
                             language,
                           )}{" "}
-                          items assigned
+                          {t("itemsAssigned" as any)}
                         </span>
                       </span>
                     );
@@ -1042,8 +1098,15 @@ export function OrderDetail() {
                 </p>
                 {hasJoined && myEstTotal > 0 && (
                   <p className="text-[11px] font-semibold text-emerald-600 mt-1.5">
-                    Your share:{" "}
+                    {t("yourShare" as any)}{" "}
                     {toArabicNumeral(myEstTotal.toLocaleString(), language)}{" "}
+                    {t("currency")}
+                  </p>
+                )}
+                {isCreator && creatorEstTotal > 0 && (
+                  <p className="text-[11px] font-semibold text-indigo-600 mt-1.5">
+                    {t("yourShare" as any)}{" "}
+                    {toArabicNumeral(creatorEstTotal.toLocaleString(), language)}{" "}
                     {t("currency")}
                   </p>
                 )}
@@ -1157,18 +1220,30 @@ export function OrderDetail() {
                         {t("quantity" as any)}
                       </th>
                       <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                        {t("marketPrice" as any)}
+                        {t("bestSupplierPrice" as any)}
                       </th>
                       <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                         {t("total" as any)}
                       </th>
+                      {deadlinePassed && (
+                        <th className="text-start px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                          {t("status" as any)}
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {order.products.map((product) => {
-                      const unitPrice =
-                        product.marketPrice ?? product.unitPrice ?? 0;
-                      const totalCost = unitPrice * product.targetQuantity;
+                      const bestPriceInfo =
+                        eligibleSuppliers.length > 0
+                          ? bestSupplierPrices.get(product.groupOrderItemId)
+                          : null;
+                      const effectivePrice =
+                        bestPriceInfo?.price ??
+                        product.marketPrice ??
+                        product.unitPrice ??
+                        0;
+                      const totalCost = effectivePrice * product.targetQuantity;
                       // Debug to see what prices come from API
                       console.log(
                         "[OrderDetail] Product:",
@@ -1193,7 +1268,7 @@ export function OrderDetail() {
                           </td>
                           <td className="px-5 py-4 text-sm text-slate-600 font-medium">
                             {toArabicNumeral(
-                              product.targetQuantity.toLocaleString(),
+                              String(product.targetQuantity),
                               language,
                             )}{" "}
                             <span className="text-[11px] text-slate-400 font-normal">
@@ -1204,9 +1279,38 @@ export function OrderDetail() {
                             </span>
                           </td>
                           <td className="px-5 py-4 text-sm text-slate-600 font-medium">
-                            {unitPrice > 0
-                              ? `${toArabicNumeral(unitPrice.toLocaleString(), language)} ${t("currency")}`
-                              : "—"}
+                            {eligibleSuppliers.length > 0
+                              ? (() => {
+                                  const best = bestSupplierPrices.get(
+                                    product.groupOrderItemId,
+                                  );
+                                  if (best) {
+                                    return (
+                                      <div>
+                                        <p className="text-sm font-bold text-emerald-600">
+                                          {toArabicNumeral(
+                                            best.price.toLocaleString(),
+                                            language,
+                                          )}{" "}
+                                          {t("currency")}
+                                        </p>
+                                        <p className="text-[10px] text-slate-400 leading-tight">
+                                          {language === "ar"
+                                            ? `أفضل سعر عبر ${best.supplierName}`
+                                            : `Best price via ${best.supplierName}`}
+                                        </p>
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <span className="text-slate-400 italic">
+                                      {t("noSupplierPrice" as any)}
+                                    </span>
+                                  );
+                                })()
+                              : effectivePrice > 0
+                                ? `${toArabicNumeral(effectivePrice.toLocaleString(), language)} ${t("currency")}`
+                                : "—"}
                           </td>
                           <td className="px-5 py-4">
                             <span className="text-sm font-bold text-indigo-600">
@@ -1215,6 +1319,42 @@ export function OrderDetail() {
                                 : "—"}
                             </span>
                           </td>
+                          {deadlinePassed && (
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-2">
+                                {product.supplierName ? (
+                                  <>
+                                    <span className="text-sm font-medium text-indigo-600">
+                                      {product.supplierName}
+                                    </span>
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                        product.itemStatus === "Accepted"
+                                          ? "bg-emerald-100 text-emerald-800"
+                                          : product.itemStatus === "Pending"
+                                            ? "bg-amber-100 text-amber-800"
+                                            : product.itemStatus === "Declined"
+                                              ? "bg-red-100 text-red-800"
+                                              : "bg-slate-100 text-slate-600"
+                                      }`}
+                                    >
+                                      {product.itemStatus === "Accepted"
+                                        ? t("accepted" as any)
+                                        : product.itemStatus === "Pending"
+                                          ? t("pending" as any)
+                                          : product.itemStatus === "Declined"
+                                            ? t("declined" as any)
+                                            : product.itemStatus}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-sm text-slate-400 italic">
+                                    {t("clickToAssignSupplier" as any)}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -1232,7 +1372,7 @@ export function OrderDetail() {
                 {t("recentActivity" as any)}
               </h3>
               <div className="space-y-3">
-                {order.activities.slice(0, 6).map((act) => (
+                {order.activities.slice(0, 3).map((act) => (
                   <div key={act.id} className="flex items-start gap-2.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
                     <div>
@@ -1251,81 +1391,6 @@ export function OrderDetail() {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Per-Product Assignment Status ── */}
-        <div className="mt-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
-              <Package className="w-5 h-5 text-indigo-600" />
-              {t("products" as any)} (
-              {toArabicNumeral(String(order.products.length), language)})
-              {(order.totalProductCount != null ||
-                order.assignedProductCount != null) && (
-                <span className="text-xs font-medium text-slate-500 ml-2">
-                  {toArabicNumeral(
-                    String(order.assignedProductCount ?? 0),
-                    language,
-                  )}{" "}
-                  /{" "}
-                  {toArabicNumeral(
-                    String(order.totalProductCount ?? order.products.length),
-                    language,
-                  )}{" "}
-                  assigned
-                </span>
-              )}
-            </h2>
-            <div className="space-y-3">
-              {order.products.map((product) => {
-                const statusColor =
-                  product.itemStatus === "Accepted"
-                    ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-                    : product.itemStatus === "Pending"
-                      ? "bg-amber-100 text-amber-700 border-amber-200"
-                      : product.itemStatus === "Declined"
-                        ? "bg-red-100 text-red-700 border-red-200"
-                        : "bg-slate-100 text-slate-500 border-slate-200";
-                return (
-                  <div
-                    key={product.groupOrderItemId}
-                    className="flex items-center justify-between bg-slate-50 rounded-xl p-3.5"
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-600 shrink-0">
-                        {product.productName.charAt(0)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">
-                          {product.productName}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Qty:{" "}
-                          {toArabicNumeral(
-                            String(product.targetQuantity),
-                            language,
-                          )}{" "}
-                          {getUnitDisplay(product.unit, language)}
-                          {(product.marketPrice ?? product.unitPrice) != null &&
-                            ` — ${toArabicNumeral((product.marketPrice ?? product.unitPrice)?.toLocaleString(), language)} ${t("currency")}/${getUnitDisplay(product.unit, language)}`}
-                        </p>
-                        {product.supplierName && (
-                          <p className="text-xs font-medium text-indigo-600 mt-0.5">
-                            {product.supplierName}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <span
-                      className={`text-[11px] font-bold px-2 py-1 rounded-full border shrink-0 ${statusColor}`}
-                    >
-                      {product.itemStatus}
-                    </span>
-                  </div>
-                );
-              })}
             </div>
           </div>
         </div>
@@ -1360,130 +1425,152 @@ export function OrderDetail() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {eligibleSuppliers.map((supplier) => {
-                  const unassignedItems = supplier.coveredProducts.filter(
-                    (cp) => {
-                      const product = order.products.find(
-                        (p) => p.groupOrderItemId === cp.groupOrderItemId,
-                      );
-                      return product?.itemStatus === "Unassigned";
-                    },
-                  );
-                  const selectedCount = (
-                    selectedItemIds[supplier.supplierId] ?? []
-                  ).length;
-                  return (
-                    <div
-                      key={supplier.supplierId}
-                      className="border border-slate-200 rounded-xl overflow-hidden hover:border-indigo-400 transition-all"
-                    >
-                      {/* Header */}
-                      <div className="flex items-center justify-between p-4 bg-white border-b border-slate-100">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() =>
-                              handleSupplierClick(supplier.supplierId)
-                            }
-                            className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white font-bold text-sm shrink-0 hover:opacity-90 transition-opacity"
-                          >
-                            {supplier.supplierName.charAt(0)}
-                          </button>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {/* Product-centric layout: each product shows its covering suppliers */}
+                {order.products
+                  .filter((p) => deadlinePassed || p.itemStatus === "Unassigned")
+                  .map((product) => {
+                    const coveringSuppliers = eligibleSuppliers.filter((s) =>
+                      s.coveredProducts.some(
+                        (cp) => cp.groupOrderItemId === product.groupOrderItemId,
+                      ),
+                    );
+                    const isAlreadyAssigned =
+                      product.itemStatus !== "Unassigned";
+                    if (!isAlreadyAssigned && coveringSuppliers.length === 0)
+                      return null;
+                    return (
+                      <div
+                        key={product.groupOrderItemId}
+                        className="border border-slate-200 rounded-xl overflow-hidden"
+                      >
+                        {/* Product header */}
+                        <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-100">
                           <div>
-                            <h3 className="font-bold text-slate-900 text-sm">
-                              {supplier.supplierName}
+                            <h3 className="text-sm font-bold text-slate-900">
+                              {product.productName}
                             </h3>
-                            <p className="text-[11px] text-slate-500">
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {t("need" as any)}{" "}
                               {toArabicNumeral(
-                                String(supplier.coveredProductCount),
+                                String(product.targetQuantity),
                                 language,
                               )}{" "}
-                              product
-                              {supplier.coveredProductCount !== 1
-                                ? "s"
-                                : ""}{" "}
-                              covered — est.{" "}
-                              {toArabicNumeral(
-                                supplier.totalEstimatedCost.toLocaleString(),
-                                language,
-                              )}{" "}
-                              {t("currency")}
+                              {getUnitDisplay(product.unit, language)}
                             </p>
                           </div>
-                        </div>
-                        <button
-                          onClick={() =>
-                            handleSupplierClick(supplier.supplierId)
-                          }
-                          className="text-xs text-indigo-600 font-semibold hover:text-indigo-800 transition-colors"
-                        >
-                          {t("clickToViewProfile" as any)} →
-                        </button>
-                      </div>
-
-                      {/* Product checklist */}
-                      <div className="divide-y divide-slate-100">
-                        {supplier.coveredProducts.map((cp) => {
-                          const product = order.products.find(
-                            (p) => p.groupOrderItemId === cp.groupOrderItemId,
-                          );
-                          if (!product) return null;
-                          const isUnassigned =
-                            product.itemStatus === "Unassigned";
-                          const isChecked = (
-                            selectedItemIds[supplier.supplierId] ?? []
-                          ).includes(cp.groupOrderItemId);
-                          const currentTier =
-                            cp.pricingTiers.length > 0
-                              ? cp.pricingTiers.find(
-                                  (t) =>
-                                    product.targetQuantity >= t.minQty &&
-                                    (t.maxQty == null ||
-                                      product.targetQuantity <= t.maxQty),
-                                )
-                              : null;
-                          const displayPrice =
-                            currentTier?.unitPrice ?? cp.unitPrice;
-                          return (
-                            <div
-                              key={cp.groupOrderItemId}
-                              className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors"
+                          {isAlreadyAssigned && (
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                                product.itemStatus === "Accepted"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : product.itemStatus === "Pending"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : product.itemStatus === "Declined"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-slate-100 text-slate-600"
+                              }`}
                             >
-                              <div className="flex items-center gap-3 min-w-0 flex-1">
-                                {isUnassigned ? (
-                                  <button
-                                    onClick={() =>
-                                      toggleItem(
-                                        supplier.supplierId,
-                                        cp.groupOrderItemId,
-                                      )
-                                    }
-                                    className="shrink-0"
-                                  >
-                                    {isChecked ? (
-                                      <CheckSquare className="w-5 h-5 text-indigo-600" />
-                                    ) : (
-                                      <Square className="w-5 h-5 text-slate-300 hover:text-slate-400" />
+                              {product.itemStatus === "Accepted"
+                                ? t("accepted" as any)
+                                : product.itemStatus === "Pending"
+                                  ? t("pending" as any)
+                                  : product.itemStatus === "Declined"
+                                    ? t("declined" as any)
+                                    : product.itemStatus}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Supplier options or assigned info */}
+                        {isAlreadyAssigned ? (
+                          <div className="px-4 py-3 flex items-center gap-3">
+                            <button
+                              onClick={() =>
+                                handleSupplierClick(product.supplierId!)
+                              }
+                              className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0"
+                            >
+                              {product.supplierName?.charAt(0)}
+                            </button>
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">
+                                {product.supplierName}
+                              </p>
+                              <p className="text-[11px] text-slate-500">
+                                {product.itemStatus === "Pending"
+                                  ? language === "ar"
+                                    ? "في انتظار رد المورد"
+                                    : "Awaiting supplier response"
+                                  : product.itemStatus === "Accepted"
+                                    ? language === "ar"
+                                      ? "تم قبول الطلب"
+                                      : "Supplier accepted"
+                                    : product.itemStatus === "Declined"
+                                      ? language === "ar"
+                                        ? "تم رفض الطلب"
+                                        : "Supplier declined"
+                                      : t("currentlyAssignedTo" as any)}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-slate-100">
+                            {coveringSuppliers.map((supplier) => {
+                              const cp = supplier.coveredProducts.find(
+                                (c) =>
+                                  c.groupOrderItemId ===
+                                  product.groupOrderItemId,
+                              )!;
+                              const currentTier =
+                                cp.pricingTiers.length > 0
+                                  ? cp.pricingTiers.find(
+                                      (t) =>
+                                        product.targetQuantity >= t.minQty &&
+                                        (t.maxQty == null ||
+                                          product.targetQuantity <= t.maxQty),
+                                    )
+                                  : null;
+                              const displayPrice =
+                                currentTier?.unitPrice ?? cp.unitPrice;
+                              const isSelected =
+                                productSelection[
+                                  product.groupOrderItemId
+                                ] === supplier.supplierId;
+                              return (
+                                <div
+                                  key={supplier.supplierId}
+                                  className={`flex items-center justify-between px-4 py-2 transition-all cursor-pointer ${
+                                    isSelected
+                                      ? "bg-indigo-50 border-l-2 border-indigo-500"
+                                      : "hover:bg-indigo-50 hover:border-l-2 hover:border-indigo-300"
+                                  }`}
+                                  onClick={() => handleSupplierClick(supplier.supplierId)}
+                                >
+                                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    {deadlinePassed && (
+                                      <input
+                                        type="radio"
+                                        name={`product-${product.groupOrderItemId}`}
+                                        checked={isSelected}
+                                        onChange={() =>
+                                          selectSupplier(
+                                            product.groupOrderItemId,
+                                            supplier.supplierId,
+                                          )
+                                        }
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-4 h-4 text-indigo-600 shrink-0"
+                                      />
                                     )}
-                                  </button>
-                                ) : (
-                                  <div className="w-5 h-5 shrink-0" />
-                                )}
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium text-slate-900 truncate">
-                                    {product.productName}
-                                  </p>
-                                  <p className="text-xs text-slate-500">
-                                    Need:{" "}
-                                    {toArabicNumeral(
-                                      String(product.targetQuantity),
-                                      language,
-                                    )}{" "}
-                                    {getUnitDisplay(product.unit, language)}
+                                    <span className="text-sm font-semibold text-slate-900">
+                                      {supplier.supplierName}
+                                    </span>
                                     {cp.availableStock <
                                       product.targetQuantity && (
-                                      <span className="text-red-500 ml-1">
-                                        (Stock:{" "}
+                                      <span className="text-[10px] text-red-500 font-medium">
+                                        ({t("stockWarning" as any)}{" "}
                                         {toArabicNumeral(
                                           String(cp.availableStock),
                                           language,
@@ -1491,81 +1578,69 @@ export function OrderDetail() {
                                         )
                                       </span>
                                     )}
-                                  </p>
+                                  </div>
+                                  <div className="text-right shrink-0 ml-3">
+                                    <p className="text-sm font-bold text-indigo-700">
+                                      {toArabicNumeral(
+                                        displayPrice.toLocaleString(),
+                                        language,
+                                      )}{" "}
+                                      {t("currency")}/
+                                      {getUnitDisplay(
+                                        product.unit,
+                                        language,
+                                      )}
+                                    </p>
+                                    {currentTier && (
+                                      <p className="text-[10px] text-slate-400">
+                                        {currentTier.maxQty
+                                          ? `${toArabicNumeral(String(currentTier.minQty), language)}-${toArabicNumeral(String(currentTier.maxQty), language)}`
+                                          : `${toArabicNumeral(String(currentTier.minQty), language)}+`}{" "}
+                                        {getUnitDisplay(
+                                          product.unit,
+                                          language,
+                                        )}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="text-right shrink-0 ml-3">
-                                <p className="text-sm font-bold text-indigo-700">
-                                  {toArabicNumeral(
-                                    displayPrice.toLocaleString(),
-                                    language,
-                                  )}{" "}
-                                  {t("currency")}/
-                                  {getUnitDisplay(product.unit, language)}
-                                </p>
-                                {currentTier && (
-                                  <p className="text-[10px] text-slate-400">
-                                    {currentTier.maxQty
-                                      ? `${toArabicNumeral(String(currentTier.minQty), language)}-${toArabicNumeral(String(currentTier.maxQty), language)}`
-                                      : `${toArabicNumeral(String(currentTier.minQty), language)}+`}{" "}
-                                    {getUnitDisplay(product.unit, language)}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
+                    );
+                  })}
+                </div>
 
-                      {/* Actions */}
-                      {deadlinePassed && unassignedItems.length > 0 && (
-                        <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-t border-slate-100">
-                          <button
-                            onClick={() =>
-                              selectAllUnassigned(
-                                supplier.supplierId,
-                                unassignedItems.map((u) => u.groupOrderItemId),
-                              )
-                            }
-                            className="text-xs text-indigo-600 font-semibold hover:text-indigo-800 transition-colors"
-                          >
-                            {t("selectAll" as any)} (
-                            {toArabicNumeral(
-                              String(unassignedItems.length),
-                              language,
-                            )}
-                            )
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (selectedCount === 0) {
-                                setAssignError(
-                                  "Please select items to assign.",
-                                );
-                                return;
-                              }
-                              setAssignTarget(supplier.supplierId);
-                            }}
-                            disabled={assigning}
-                            className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
-                          >
-                            {assigning && (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            )}
-                            {t("assign" as any)} (
-                            {toArabicNumeral(String(selectedCount), language)})
-                          </button>
-                        </div>
+                {/* Assign button */}
+                {deadlinePassed &&
+                  Object.keys(productSelection).length > 0 && (
+                    <button
+                      onClick={handleAssignAll}
+                      disabled={assigning}
+                      className="w-full py-3 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                    >
+                      {assigning && (
+                        <Loader2 className="w-4 h-4 animate-spin" />
                       )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {assignError && (
-              <p className="text-xs text-red-600 mt-3 text-center">
-                {assignError}
-              </p>
+                      {assigning
+                        ? t("assigning" as any)
+                        : `${t("assign" as any)} (${toArabicNumeral(String(Object.keys(productSelection).length), language)})`}
+                    </button>
+                  )}
+
+                {assignSuccess && (
+                  <p className="text-xs text-emerald-600 text-center font-medium">
+                    {assignSuccess}
+                  </p>
+                )}
+                {assignError && (
+                  <p className="text-xs text-red-600 text-center">
+                    {assignError}
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
@@ -1602,94 +1677,13 @@ export function OrderDetail() {
                       String(order.totalProductCount ?? order.products.length),
                       language,
                     )}{" "}
-                    items assigned
+                    {t("itemsAssigned" as any)}
                   </p>
                 </div>
               </div>
             </div>
           )}
 
-        {/* ── Assign Confirmation Dialog ── */}
-        {assignTarget &&
-          (() => {
-            const supplier = eligibleSuppliers.find(
-              (s) => s.supplierId === assignTarget,
-            );
-            const itemIds = selectedItemIds[assignTarget] ?? [];
-            const itemNames = itemIds
-              .map(
-                (id) =>
-                  order.products.find((p) => p.groupOrderItemId === id)
-                    ?.productName,
-              )
-              .filter(Boolean);
-            return (
-              <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-                onClick={(e) => {
-                  if (e.target === e.currentTarget) setAssignTarget(null);
-                }}
-              >
-                <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-                  <h3 className="text-sm font-bold text-slate-900">
-                    {t("assignSupplierConfirmTitle" as any)}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {t("assignSupplierConfirmDesc" as any)}{" "}
-                    <span className="font-bold text-indigo-600">
-                      {supplier?.supplierName}
-                    </span>
-                  </p>
-                  {itemNames.length > 0 && (
-                    <div className="mt-3 bg-slate-50 rounded-xl p-3">
-                      <p className="text-xs font-semibold text-slate-600 mb-1.5">
-                        Items (
-                        {toArabicNumeral(String(itemNames.length), language)}):
-                      </p>
-                      <ul className="space-y-1">
-                        {itemNames.map((name, i) => (
-                          <li
-                            key={i}
-                            className="text-xs text-slate-700 flex items-center gap-1.5"
-                          >
-                            <CheckCircle className="w-3 h-3 text-indigo-500 shrink-0" />
-                            {name}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3 mt-5">
-                    <button
-                      onClick={() => setAssignTarget(null)}
-                      disabled={assigning}
-                      className="flex-1 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
-                    >
-                      {t("cancel" as any)}
-                    </button>
-                    <button
-                      onClick={() => handleAssign(assignTarget)}
-                      disabled={assigning}
-                      className="flex-1 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
-                    >
-                      {assigning && (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      )}
-                      {assigning
-                        ? t("assigning" as any)
-                        : `Assign ${toArabicNumeral(String(itemNames.length), language)} item${itemNames.length !== 1 ? "s" : ""}`}
-                    </button>
-                  </div>
-                  {assignError && (
-                    <p className="text-xs text-red-600 mt-3 text-center">
-                      {assignError}
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
       </div>
     </>
   );

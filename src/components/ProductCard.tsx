@@ -1,7 +1,7 @@
 import React from 'react';
 import { ShoppingCart } from 'lucide-react';
 import { Product } from '../types';
-import { useLanguage } from '../i18n';
+import { useLanguage, toArabicNumeral } from '../i18n';
 
 interface ProductCardProps {
   product: Product;
@@ -29,10 +29,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <div className="mt-4 flex items-end justify-between mt-auto">
           <div className="flex flex-col">
             <span className="text-lg font-black text-indigo-600 flex items-center">
-              ${product.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              ${toArabicNumeral(product.price.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }), language)}
               <span className="text-[10px] text-slate-400 font-normal ms-1 whitespace-nowrap">{t('unit')}</span>
             </span>
-            <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">{product.stock} {t('inStock')}</span>
+            <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">{toArabicNumeral(String(product.stock), language)} {t('inStock')}</span>
           </div>
           <button className="p-2 bg-slate-100 rounded-full hover:bg-indigo-600 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 flex-shrink-0">
             <ShoppingCart className="w-4 h-4" />

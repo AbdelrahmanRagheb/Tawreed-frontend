@@ -59,7 +59,7 @@ export function SupplierDashboard() {
           <p className="text-xl font-bold text-slate-900">{toArabicNumeral(kpi.totalRevenue.toLocaleString(), language)} {t('currency')}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('revenue')}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
+        <button onClick={() => navigate('/supplier/orders')} className="text-start bg-white rounded-xl border border-slate-200 p-4 hover:bg-slate-50 transition-colors">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
               <ShoppingCart className="w-5 h-5 text-indigo-600" />
@@ -67,7 +67,7 @@ export function SupplierDashboard() {
           </div>
           <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(kpi.activeOrders), language)}</p>
           <p className="text-[11px] text-slate-500 mt-0.5">{t('activeOrders')}</p>
-        </div>
+        </button>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">

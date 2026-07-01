@@ -173,9 +173,7 @@ export function SupplierOrders() {
                   {t('buyer')}: {order.creatorName} • {order.buyerCompany}
                 </p>
                 <p className="text-[11px] text-slate-500 mt-0.5">{t('region')}: {order.region}</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  <Calendar className="w-3 h-3 inline mr-1" />{t('deadline')}: {new Date(order.deadline).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
-                </p>
+               
               </div>
 
               <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
@@ -240,18 +238,38 @@ export function SupplierOrders() {
             onClick={(e) => { if (e.target === e.currentTarget) setAcceptTarget(null); }}
           >
             <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-bold text-slate-900 mb-1">{t('acceptOrder')}</h3>
-              <p className="text-xs text-slate-500 mb-4">{toArabicNumeral(String(pendingItems.length), language)} item{pendingItems.length !== 1 ? 's' : ''} to accept</p>
+              {/* Order Info */}
+              <div className="mb-4 pb-3 border-b border-slate-100">
+                <h3 className="text-lg font-bold text-slate-900">{targetOrder?.title || t('acceptOrder')}</h3>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-slate-500">
+                  <span>{targetOrder?.creatorName}{targetOrder?.buyerCompany ? ` / ${targetOrder.buyerCompany}` : ''}</span>
+                  {targetOrder?.region && <span className="text-slate-400">| {targetOrder.region}</span>}
+                </div>
+              </div>
 
               {/* Items to be accepted */}
               {pendingItems.length > 0 && (
-                <div className="bg-amber-50 rounded-xl p-3 mb-4 space-y-1.5">
-                  {pendingItems.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-slate-800">{item.productName}</span>
-                      <span className="text-slate-600">×{toArabicNumeral(String(item.quantity), language)} — {toArabicNumeral(item.lineTotal.toLocaleString(), language)} {t('currency')}</span>
-                    </div>
-                  ))}
+                <div className="mb-4 overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-[10px] text-slate-400 uppercase tracking-wider border-b border-slate-200">
+                        <th className="text-start pb-1.5 pr-2 font-medium">{t('product' as any)}</th>
+                        <th className="text-end pb-1.5 px-2 font-medium">{t('quantity' as any)}</th>
+                        <th className="text-end pb-1.5 px-2 font-medium">{t('price' as any)}</th>
+                        <th className="text-end pb-1.5 pl-2 font-medium">{t('total' as any)}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingItems.map((item, idx) => (
+                        <tr key={idx} className="border-b border-slate-100 last:border-0">
+                          <td className="py-2 pr-2 font-medium text-slate-800">{item.productName}</td>
+                          <td className="py-2 px-2 text-end text-slate-600">{toArabicNumeral(String(item.quantity), language)}</td>
+                          <td className="py-2 px-2 text-end text-slate-600">{toArabicNumeral(item.unitPrice.toLocaleString(), language)}</td>
+                          <td className="py-2 pl-2 text-end font-semibold text-indigo-600">{toArabicNumeral(item.lineTotal.toLocaleString(), language)} {t('currency')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
 

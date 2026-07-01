@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { Truck, Package, Clock, CheckCircle, XCircle, AlertCircle, Info } from "lucide-react";
+import { Truck, Package, Clock, CheckCircle, XCircle, AlertCircle, User, Calendar } from "lucide-react";
 import { useLanguage, toArabicNumeral } from "../../i18n";
 import { useAuth } from "../../contexts/AuthContext";
 import { buyerService, type BuyerDeliveryDto } from "../../services/buyer.service";
 
-const statusConfig: Record<string, { icon: typeof Package; color: string; bg: string; label: string }> = {
-  Pending: { icon: Clock, color: "text-amber-600", bg: "bg-amber-100", label: "Pending" },
-  Preparing: { icon: Package, color: "text-blue-600", bg: "bg-blue-100", label: "Preparing" },
-  Shipped: { icon: Truck, color: "text-indigo-600", bg: "bg-indigo-100", label: "Shipped" },
-  Delivered: { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-100", label: "Delivered" },
-  Failed: { icon: XCircle, color: "text-red-600", bg: "bg-red-100", label: "Failed" },
+const STEPS = ["Pending", "PickedUp", "OutForDelivery", "Delivered"] as const;
+
+const statusLabels: Record<string, { en: string; ar: string }> = {
+  Pending: { en: "Pending", ar: "قيد الانتظار" },
+  PickedUp: { en: "Picked Up", ar: "تم الاستلام" },
+  OutForDelivery: { en: "Out for Delivery", ar: "قيد التوصيل" },
+  Delivered: { en: "Delivered", ar: "تم التسليم" },
+  Cancelled: { en: "Cancelled", ar: "ملغي" },
 };
 
 export function BuyerDeliveries() {
@@ -27,6 +29,11 @@ export function BuyerDeliveries() {
       .catch((err) => setError(err?.response?.data?.message || err?.message || "Failed to load deliveries"))
       .finally(() => setLoading(false));
   }, [user?.id]);
+
+  const getStepIndex = (status: string) => {
+    const idx = STEPS.indexOf(status as typeof STEPS[number]);
+    return idx >= 0 ? idx : -1;
+  };
 
   if (loading) {
     return (
@@ -61,25 +68,90 @@ export function BuyerDeliveries() {
 
       <div className="space-y-4">
         {deliveries.map((delivery) => {
-          const cfg = statusConfig[delivery.status] || { icon: Info, color: "text-slate-600", bg: "bg-slate-100", label: delivery.status };
-          const StatusIcon = cfg.icon;
+          const currentStep = getStepIndex(delivery.status);
+          const isCancelled = delivery.status === "Cancelled";
 
           return (
             <div key={delivery.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              {/* Header */}
               <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-bold text-slate-900">{delivery.orderTitle}</p>
-                   <p className="text-xs text-slate-500 mt-0.5">{delivery.shippingRegion}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{delivery.shippingRegion}</p>
                 </div>
-                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.bg} ${cfg.color}`}>
-                  <StatusIcon className="w-3 h-3" />
-                  {cfg.label}
-                </span>
+                {isCancelled ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700">
+                    <XCircle className="w-3 h-3" />
+                    {t("cancelled" as any)}
+                  </span>
+                ) : currentStep >= 0 && (
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                    currentStep === 3 ? "bg-emerald-100 text-emerald-700" : "bg-indigo-100 text-indigo-700"
+                  }`}>
+                    <Package className="w-3 h-3" />
+                    {statusLabels[delivery.status]?.[language === "ar" ? "ar" : "en"] || delivery.status}
+                  </span>
+                )}
               </div>
 
-              <div className="px-5 py-4 space-y-3">
+              {/* Tracking Timeline */}
+              {!isCancelled && (
+                <div className="px-5 py-5">
+                  <div className="flex items-center">
+                    {STEPS.map((step, idx) => {
+                      const isCompleted = idx < currentStep;
+                      const isCurrent = idx === currentStep;
+                      const isFuture = idx > currentStep;
+
+                      return (
+                        <div key={step} className="flex-1 flex flex-col items-center relative">
+                          {/* Connector line */}
+                          {idx > 0 && (
+                            <div className={`absolute top-3.5 right-1/2 w-full h-0.5 -translate-y-1/2 ${
+                              isCompleted ? "bg-emerald-500" : isCurrent ? "bg-amber-400" : "bg-slate-200"
+                            }`} />
+                          )}
+                          {/* Dot */}
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center z-10 ${
+                            isCompleted ? "bg-emerald-500 text-white" :
+                            isCurrent ? "bg-amber-400 text-white ring-4 ring-amber-100 animate-pulse" :
+                            "bg-slate-200 text-slate-400"
+                          }`}>
+                            {isCompleted ? (
+                              <CheckCircle className="w-4 h-4" />
+                            ) : (
+                              <div className={`w-2.5 h-2.5 rounded-full ${isCurrent ? "bg-white" : "bg-slate-400"}`} />
+                            )}
+                          </div>
+                          {/* Label */}
+                          <p className={`text-[10px] mt-1.5 text-center leading-tight ${
+                            isCompleted ? "text-emerald-700 font-semibold" :
+                            isCurrent ? "text-amber-700 font-semibold" :
+                            "text-slate-400"
+                          }`}>
+                            {language === "ar"
+                              ? (step === "Pending" ? "قيد الانتظار" :
+                                 step === "PickedUp" ? "تم الاستلام" :
+                                 step === "OutForDelivery" ? "قيد التوصيل" :
+                                 "تم التسليم")
+                              : step === "Pending" ? "Pending" :
+                                step === "PickedUp" ? "Picked Up" :
+                                step === "OutForDelivery" ? "On Route" :
+                                "Delivered"}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Details */}
+              <div className="px-5 py-4 space-y-3 border-t border-slate-100">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">{t("scheduledDate")}</span>
+                  <span className="text-xs text-slate-500 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" /> {t("scheduledDate")}
+                  </span>
                   <span className="text-xs font-semibold text-slate-900">
                     {delivery.scheduledAt
                       ? new Date(delivery.scheduledAt).toLocaleString(language === "ar" ? "ar-SA" : "en-US")
@@ -88,7 +160,9 @@ export function BuyerDeliveries() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">{t("deliveryPerson")}</span>
+                  <span className="text-xs text-slate-500 flex items-center gap-1">
+                    <User className="w-3.5 h-3.5" /> {t("deliveryPerson")}
+                  </span>
                   <span className="text-xs font-semibold text-slate-900">
                     {delivery.deliveryPersonName || "—"}
                   </span>
@@ -102,6 +176,7 @@ export function BuyerDeliveries() {
                 </div>
               </div>
 
+              {/* Items */}
               <div className="px-5 py-3 bg-slate-50 border-t border-slate-100">
                 <p className="text-[11px] font-semibold text-slate-600 mb-2">{t("items")}</p>
                 <div className="space-y-1.5">

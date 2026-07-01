@@ -265,7 +265,7 @@ export function JoinOrder() {
                     <span>{t('category')}: {product.categoryName}</span>
                   </div>
                   <div className="mt-1 flex items-center justify-between">
-                    <p className="text-lg font-bold text-slate-900">{toArabicNumeral(String(product.price), language)} {t('currency')}</p>
+                    <p className="text-lg font-bold text-slate-900">{toArabicNumeral(String(product.marketPrice ?? 0), language)} {t('currency')}</p>
                     {order?.products.some((op) => op.productId === product.id) && (
                       <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-semibold">
                         {t('inOrder')}
@@ -459,7 +459,7 @@ export function JoinOrder() {
                 <span>{t('category')}: {modalProduct.categoryName}</span>
               </div>
               <div className="flex items-center justify-between mt-3">
-                <p className="text-sm text-slate-500">{t('currentPrice')}: <span className="font-bold text-slate-900">{toArabicNumeral(String(modalProduct.price), language)} {t('currency')}</span></p>
+                <p className="text-sm text-slate-500">{t('currentPrice')}: <span className="font-bold text-slate-900">{toArabicNumeral(String(modalProduct.marketPrice ?? 0), language)} {t('currency')}</span></p>
               </div>
 
               <div className="mt-4 pt-4 border-t border-slate-100">
@@ -487,7 +487,7 @@ export function JoinOrder() {
                   <span className="text-xs text-slate-500">{getUnitDisplay(modalProduct.unit || 'UNIT', language)}</span>
                 </div>
                 <p className="text-xs text-slate-400 mt-2">
-                  {t('subtotal')}: <span className="font-bold text-slate-700">{toArabicNumeral(String(modalProduct.price * modalQty), language)} {t('currency')}</span>
+                  {t('subtotal')}: <span className="font-bold text-slate-700">{toArabicNumeral(String((modalProduct.marketPrice ?? 0) * modalQty), language)} {t('currency')}</span>
                 </p>
               </div>
 

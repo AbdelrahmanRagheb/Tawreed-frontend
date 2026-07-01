@@ -95,9 +95,9 @@ export function AdminSuppliers() {
   };
 
   const formatCurrency = (val: number) => {
-    return val.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US', {
+    return toArabicNumeral(val.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US', {
       minimumFractionDigits: 2, maximumFractionDigits: 2
-    });
+    }), language);
   };
 
   const displayStatus = (status: string) => {
