@@ -51,10 +51,7 @@ export function SupplierReports() {
           <h1 className="text-2xl font-bold text-slate-900">{t('reports')}</h1>
           <p className="text-sm text-slate-500 mt-1">{t('reportsDesc')}</p>
         </div>
-        <button className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors">
-          <Download className="w-3.5 h-3.5" />
-          {t('downloadReport')}
-        </button>
+       
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">

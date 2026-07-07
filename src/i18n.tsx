@@ -32,7 +32,9 @@ export function getUnitDisplay(unit: string, language: Language): string {
 
 export function toArabicNumeral(str: string, language: Language): string {
   if (language !== "ar") return str;
-  return str.replace(/[0-9]/g, (d) => String.fromCharCode(0x0660 + parseInt(d)));
+  return str.replace(/[0-9]/g, (d) =>
+    String.fromCharCode(0x0660 + parseInt(d)),
+  );
 }
 
 export const translations = {
@@ -204,14 +206,17 @@ export const translations = {
   saved: { en: "Saved", ar: "المحفوظة" },
   create: { en: "Create", ar: "إنشاء" },
   alerts: { en: "Alerts", ar: "التنبيهات" },
-  dashboard: { en: "Dashboard", ar: "لوحة التحكم" },
+  dashboard: { en: "Dashboard", ar: "الرئيسية" },
   deliveries: { en: "Deliveries", ar: "التوصيلات" },
   users: { en: "Users", ar: "المستخدمون" },
   suppliers: { en: "Suppliers", ar: "الموردون" },
   loggedInAs: { en: "Logged in as", ar: "مسجل الدخول كـ" },
   myActiveOrders: { en: "My Active Orders", ar: "طلباتي النشطة" },
   ordersNearYou: { en: "Orders Near You", ar: "الطلبات القريبة منك" },
-  noNearbyOrders: { en: "No orders near you yet", ar: "لا توجد طلبات قريبة منك بعد" },
+  noNearbyOrders: {
+    en: "No orders near you yet",
+    ar: "لا توجد طلبات قريبة منك بعد",
+  },
   totalSavings: { en: "Total Savings", ar: "إجمالي التوفير" },
   trendingProducts: { en: "Trending Products", ar: "المنتجات الرائجة" },
   join: { en: "Join", ar: "انضمام" },
@@ -368,7 +373,10 @@ export const translations = {
   markDelivered: { en: "Delivered to buyer", ar: "تم التسليم للمشتري" },
   item: { en: "Item", ar: "الصنف" },
   qty: { en: "Qty", ar: "الكمية" },
-  enterVerificationCode: { en: "Enter verification code", ar: "أدخل رمز التحقق" },
+  enterVerificationCode: {
+    en: "Enter verification code",
+    ar: "أدخل رمز التحقق",
+  },
   verify: { en: "Verify", ar: "تحقق" },
   verified: { en: "Verified", ar: "تم التحقق" },
   pickedUp: { en: "Picked Up", ar: "تم الاستلام" },
@@ -558,7 +566,10 @@ export const translations = {
   businessType: { en: "Business Type", ar: "نوع النشاط" },
   address: { en: "Address", ar: "العنوان" },
   taxId: { en: "Tax ID", ar: "الرقم الضريبي" },
-  commercialRegistrationNo: { en: "Commercial Register No.", ar: "السجل التجاري" },
+  commercialRegistrationNo: {
+    en: "Commercial Register No.",
+    ar: "السجل التجاري",
+  },
   registrationDocs: { en: "Registration Documents", ar: "المستندات الرسمية" },
   statusOpen: { en: "Open", ar: "مفتوح" },
   statusClosed: { en: "Closed", ar: "مغلق" },
@@ -693,7 +704,10 @@ export const translations = {
   unassigned: { en: "Unassigned", ar: "غير معين" },
   accepted: { en: "Accepted", ar: "مقبول" },
   declined: { en: "Declined", ar: "مرفوض" },
-  clickToAssignSupplier: { en: "Not assigned — click to assign", ar: "غير معين — انقر لتعيين مورد" },
+  clickToAssignSupplier: {
+    en: "Not assigned — click to assign",
+    ar: "غير معين — انقر لتعيين مورد",
+  },
 
   // ── Home / Landing Page ──
   homeHeroTitle: {
@@ -798,7 +812,10 @@ export const translations = {
   signingIn: { en: "Signing in...", ar: "جاري تسجيل الدخول..." },
   noAccount: { en: "Don't have an account?", ar: "ليس لديك حساب؟" },
   createOne: { en: "Create one", ar: "أنشئ حساباً" },
-  invalidCredentials: { en: "Invalid email or password", ar: "البريد الإلكتروني أو كلمة المرور غير صحيحة" },
+  invalidCredentials: {
+    en: "Invalid email or password",
+    ar: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+  },
   loginFailed: { en: "Login failed", ar: "فشل تسجيل الدخول" },
   joinTawreed: {
     en: "Join Tawreed as a buyer or supplier or driver",
@@ -833,16 +850,31 @@ export const translations = {
   remember: { en: "Remember me", ar: "تذكرني" },
   forgotPassword: { en: "Forgot password?", ar: "نسيت كلمة المرور؟" },
   or: { en: "OR", ar: "أو" },
-  continueWithGoogle: { en: "Continue with Google", ar: "المتابعة باستخدام Google" },
-  tagline: { en: "The smart supply platform for retailers", ar: "منصة التوريد الذكية للمتاجر" },
+  continueWithGoogle: {
+    en: "Continue with Google",
+    ar: "المتابعة باستخدام Google",
+  },
+  tagline: {
+    en: "The smart supply platform for retailers",
+    ar: "منصة التوريد الذكية للمتاجر",
+  },
   feature1: { en: "Fast & reliable delivery", ar: "توصيل سريع وموثوق" },
-  feature2: { en: "Thousands of suppliers at your fingertips", ar: "آلاف الموردين بين يديك" },
+  feature2: {
+    en: "Thousands of suppliers at your fingertips",
+    ar: "آلاف الموردين بين يديك",
+  },
   feature3: { en: "Effortless order management", ar: "إدارة الطلبات بسهولة" },
   showPassword: { en: "Show password", ar: "إظهار كلمة المرور" },
   hidePassword: { en: "Hide password", ar: "إخفاء كلمة المرور" },
-  invalidEmail: { en: "Please enter a valid email", ar: "البريد الإلكتروني غير صحيح" },
+  invalidEmail: {
+    en: "Please enter a valid email",
+    ar: "البريد الإلكتروني غير صحيح",
+  },
   requiredPassword: { en: "Password is required", ar: "كلمة المرور مطلوبة" },
-  successMessage: { en: "Signed in successfully ✓", ar: "تم تسجيل الدخول بنجاح ✓" },
+  successMessage: {
+    en: "Signed in successfully ✓",
+    ar: "تم تسجيل الدخول بنجاح ✓",
+  },
   remove: { en: "Remove", ar: "إزالة" },
   closeMenu: { en: "Close menu", ar: "إغلاق القائمة" },
   menu: { en: "Menu", ar: "القائمة" },
