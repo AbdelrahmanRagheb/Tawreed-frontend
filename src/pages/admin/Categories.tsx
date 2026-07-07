@@ -21,41 +21,22 @@ export function AdminCategories() {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
-    adminService.listCategories({ page: 1, limit: 100 })
-      .then((res) => setCategories(res.data.items))
-      .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load categories'))
+    adminService.listCategories()
+      .then(res => setCategories(res.data.items || []))
+      .catch(() => setError('Failed to load categories'))
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = categories.filter((c) =>
-    (language === 'ar' ? c.nameAr : c.nameEn).toLowerCase().includes(search.toLowerCase())
-  );
-
-  const toggleActive = async (id: string, currentActive: boolean) => {
+  const handleCategoryClick = async (cat: AdminCategory) => {
     try {
-      if (currentActive) {
-        await adminService.deactivateCategory(id);
-      } else {
-        await adminService.activateCategory(id);
-      }
-      setCategories((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c))
-      );
-    } catch (err: any) {
-      console.error('Failed to toggle category', err);
-    }
-  };
-
-  const openDetail = async (category: AdminCategory) => {
-    try {
-      const res = await adminService.getCategoryDetail(category.id);
+      const res = await adminService.getCategoryDetail(cat.id);
       setSelectedCategory(res.data);
     } catch {
-      setSelectedCategory(null);
+      setError('Failed to load category details');
     }
   };
 
-  const openAddModal = () => {
+  const openCreateModal = () => {
     setEditTarget(null);
     setFormNameAr('');
     setFormNameEn('');
@@ -72,36 +53,24 @@ export function AdminCategories() {
     setFormSortOrder(selectedCategory.sortOrder);
     setFormError('');
     setShowForm(true);
+    setSelectedCategory(null);
   };
 
   const handleFormSubmit = async () => {
-    if (!formNameAr.trim() || !formNameEn.trim()) {
-      setFormError('Both names are required');
-      return;
-    }
     setFormLoading(true);
     setFormError('');
     try {
       if (editTarget) {
-        await adminService.updateCategory(editTarget.id, {
-          nameAr: formNameAr.trim(),
-          nameEn: formNameEn.trim(),
-          sortOrder: formSortOrder,
-        });
+        await adminService.updateCategory(editTarget.id, { nameAr: formNameAr, nameEn: formNameEn, sortOrder: formSortOrder });
       } else {
-        await adminService.createCategory({
-          nameAr: formNameAr.trim(),
-          nameEn: formNameEn.trim(),
-          sortOrder: formSortOrder,
-        });
+        await adminService.createCategory({ nameAr: formNameAr, nameEn: formNameEn, sortOrder: formSortOrder });
       }
       setShowForm(false);
       setEditTarget(null);
-      setSelectedCategory(null);
-      const res = await adminService.listCategories({ page: 1, limit: 100 });
-      setCategories(res.data.items);
+      const res = await adminService.listCategories();
+      setCategories(res.data.items || []);
     } catch (err: any) {
-      setFormError(err?.response?.data?.message || err?.message || 'Failed to save category');
+      setFormError(err?.response?.data?.message || 'Failed to save category');
     } finally {
       setFormLoading(false);
     }
@@ -113,19 +82,28 @@ export function AdminCategories() {
     try {
       await adminService.deleteCategory(deleteTarget.id);
       setDeleteTarget(null);
-      setSelectedCategory(null);
-      const res = await adminService.listCategories({ page: 1, limit: 100 });
-      setCategories(res.data.items);
-    } catch (err: any) {
-      console.error('Failed to delete category', err);
+      const res = await adminService.listCategories();
+      setCategories(res.data.items || []);
+    } catch {
+      setError('Failed to delete category');
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  const totalCategories = categories.length;
-  const activeCount = categories.filter((c) => c.isActive).length;
-  const inactiveCount = categories.filter((c) => !c.isActive).length;
+  const toggleActive = async (cat: AdminCategory) => {
+    try {
+      if (cat.isActive) {
+        await adminService.deactivateCategory(cat.id);
+      } else {
+        await adminService.activateCategory(cat.id);
+      }
+      const res = await adminService.listCategories();
+      setCategories(res.data.items || []);
+    } catch {
+      setError('Failed to toggle category');
+    }
+  };
 
   if (loading) {
     return (
@@ -145,163 +123,141 @@ export function AdminCategories() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{t('categories')}</h1>
           <p className="text-sm text-slate-500 mt-1">{t('categoryManagement')}</p>
         </div>
-        <button onClick={openAddModal}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors">
+        <button onClick={openCreateModal}
+          className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors">
           <Plus className="w-3.5 h-3.5" /> {t('addCategory')}
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-3 mb-6">
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center mb-2">
-            <Tags className="w-4 h-4 text-indigo-600" />
-          </div>
-          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(totalCategories), language)}</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">{t('totalCategories')}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center mb-2">
-            <ToggleRight className="w-4 h-4 text-emerald-600" />
-          </div>
-          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(activeCount), language)}</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">{t('active')}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center mb-2">
-            <ToggleLeft className="w-4 h-4 text-slate-500" />
-          </div>
-          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(inactiveCount), language)}</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">{t('inactive')}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center mb-2">
-            <Package className="w-4 h-4 text-amber-600" />
-          </div>
-          <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(categories.reduce((s, c) => s + c.productCount, 0)), language)}</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">{t('products')}</p>
-        </div>
-      </div>
-
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+      <div className="relative mb-6">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder={t('searchCategories')}
-          className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+          className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-        {filtered.map((category) => (
-          <div
-            key={category.id}
-            className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => openDetail(category)}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                  <Tags className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">{language === 'ar' ? category.nameAr : category.nameEn}</h3>
-                  <span className="text-[10px] text-slate-400">{language === 'en' ? category.nameAr : category.nameEn}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <div className="bg-slate-50 rounded-lg p-2 text-center">
-                <p className="text-xs font-bold text-slate-900">{toArabicNumeral(String(category.productCount), language)}</p>
-                <p className="text-[9px] text-slate-500">{t('products')}</p>
-              </div>
-              <div className="bg-slate-50 rounded-lg p-2 text-center">
-                <p className="text-xs font-bold text-slate-900">{toArabicNumeral(String(category.supplierCount), language)}</p>
-                <p className="text-[9px] text-slate-500">{t('suppliers')}</p>
-              </div>
-            </div>
-
-            <button
-              onClick={(e) => { e.stopPropagation(); toggleActive(category.id, category.isActive); }}
-              className={`w-full flex items-center justify-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
-                category.isActive
-                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-              }`}
-            >
-              {category.isActive ? <ToggleRight className="w-3 h-3" /> : <ToggleLeft className="w-3 h-3" />}
-              {category.isActive ? t('active') : t('inactive')}
-            </button>
-          </div>
-        ))}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/50">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500">{t('name')}</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500">{language === 'ar' ? 'الاسم بالعربية' : 'Arabic Name'}</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-slate-500">{t('status')}</th>
+                <th className="text-center py-3 px-4 text-xs font-semibold text-slate-500">{t('sortOrder')}</th>
+                <th className="text-right py-3 px-4 text-xs font-semibold text-slate-500">{t('actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories
+                .filter(c => search ? c.nameEn.toLowerCase().includes(search.toLowerCase()) || c.nameAr.includes(search) : true)
+                .map(cat => (
+                  <tr key={cat.id} className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer" onClick={() => handleCategoryClick(cat)}>
+                    <td className="py-3 px-4">
+                      <span className="text-slate-800 font-medium text-xs">{cat.nameEn}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-slate-600 text-xs">{cat.nameAr}</span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                        cat.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {cat.isActive ? t('active') : t('inactive')}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center text-xs text-slate-600">{toArabicNumeral(String(cat.sortOrder), language)}</td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); toggleActive(cat); }}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            cat.isActive ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'
+                          }`}>
+                          {cat.isActive ? <ToggleLeft className="w-4 h-4" /> : <ToggleRight className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              {categories.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center py-12 text-sm text-slate-500">{t('noCategories')}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-12 text-sm text-slate-500">{t('noCategoriesFound')}</div>
-      )}
 
       {selectedCategory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedCategory(null)}>
-          <div className="absolute inset-0 bg-black/30" />
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                  <Tags className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">{language === 'ar' ? selectedCategory.nameAr : selectedCategory.nameEn}</h2>
-                  <p className="text-xs text-slate-400">{language === 'en' ? selectedCategory.nameAr : selectedCategory.nameEn}</p>
-                </div>
-              </div>
-              <button onClick={() => setSelectedCategory(null)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('categoryOverview')}</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-slate-50 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-slate-600 mb-1">
-                      <Package className="w-4 h-4 text-indigo-400" />
-                      <span>{t('products')}</span>
-                    </div>
-                    <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(selectedCategory.productCount), language)}</p>
+        <div className="fixed inset-0 z-50 overflow-y-auto" onClick={() => setSelectedCategory(null)}>
+          <div className="fixed inset-0 bg-black/30" />
+          <div className="min-h-full flex items-center justify-center p-4 pb-16 md:pb-4">
+            <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                    <Tags className="w-5 h-5 text-indigo-600" />
                   </div>
-                  <div className="bg-slate-50 rounded-xl p-4">
-                    <div className="flex items-center gap-2 text-sm text-slate-600 mb-1">
-                      <Store className="w-4 h-4 text-indigo-400" />
-                      <span>{t('suppliers')}</span>
-                    </div>
-                    <p className="text-xl font-bold text-slate-900">{toArabicNumeral(String(selectedCategory.supplierCount), language)}</p>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900">{language === 'ar' ? selectedCategory.nameAr : selectedCategory.nameEn}</h2>
+                    <p className="text-xs text-slate-500">{t('categoryDetail')}</p>
                   </div>
                 </div>
+                <button onClick={() => setSelectedCategory(null)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <div className="bg-slate-50 rounded-xl p-4">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">{t('categoryActions')}</h3>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => { toggleActive(selectedCategory.id, selectedCategory.isActive); setSelectedCategory(null); }}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                      selectedCategory.isActive
-                        ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
-                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                    }`}
-                  >
-                    {selectedCategory.isActive ? <ToggleLeft className="w-3.5 h-3.5" /> : <ToggleRight className="w-3.5 h-3.5" />}
-                    {selectedCategory.isActive ? t('deactivateCategory') : t('activateSupplier')}
-                  </button>
+              <div className="px-6 py-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 rounded-lg bg-slate-50">
+                    <p className="text-xs text-slate-500">{t('nameEn')}</p>
+                    <p className="text-sm font-semibold text-slate-900 mt-0.5">{selectedCategory.nameEn}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-50">
+                    <p className="text-xs text-slate-500">{t('nameAr')}</p>
+                    <p className="text-sm font-semibold text-slate-900 mt-0.5">{selectedCategory.nameAr}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-50">
+                    <p className="text-xs text-slate-500">{t('sortOrder')}</p>
+                    <p className="text-sm font-semibold text-slate-900 mt-0.5">{selectedCategory.sortOrder}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-50">
+                    <p className="text-xs text-slate-500">{t('status')}</p>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 ${
+                      selectedCategory.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {selectedCategory.isActive ? t('active') : t('inactive')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center p-3 rounded-lg bg-slate-50">
+                    <Package className="w-4 h-4 text-indigo-500 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-slate-900">{toArabicNumeral(String(selectedCategory.productCount), language)}</p>
+                    <p className="text-[11px] text-slate-500">{t('products')}</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-slate-50">
+                    <Store className="w-4 h-4 text-amber-500 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-slate-900">{toArabicNumeral(String(selectedCategory.supplierCount), language)}</p>
+                    <p className="text-[11px] text-slate-500">{t('suppliers')}</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-slate-50">
+                    <Tags className="w-4 h-4 text-emerald-500 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-slate-900">{selectedCategory.parentId ? '-' : toArabicNumeral('0', language)}</p>
+                    <p className="text-[11px] text-slate-500">{t('subcategories')}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
                   <button onClick={openEditModal}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100">
                     <Pencil className="w-3.5 h-3.5" /> {t('editCategory')}
@@ -318,45 +274,47 @@ export function AdminCategories() {
       )}
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { if (!formLoading) { setShowForm(false); setEditTarget(null); } }}>
-          <div className="absolute inset-0 bg-black/30" />
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                {editTarget ? <Pencil className="w-5 h-5 text-indigo-600" /> : <Plus className="w-5 h-5 text-indigo-600" />}
-              </div>
-              <h2 className="text-lg font-bold text-slate-900">{editTarget ? t('editCategory') : t('addCategory')}</h2>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Name (Arabic) *</label>
-                <input type="text" value={formNameAr} onChange={(e) => setFormNameAr(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Name (English) *</label>
-                <input type="text" value={formNameEn} onChange={(e) => setFormNameEn(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
-                <input type="number" value={formSortOrder} onChange={(e) => setFormSortOrder(Number(e.target.value))}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <div className="fixed inset-0 z-50 overflow-y-auto" onClick={() => { if (!formLoading) { setShowForm(false); setEditTarget(null); } }}>
+          <div className="fixed inset-0 bg-black/30" />
+          <div className="min-h-full flex items-center justify-center p-4 pb-16 md:pb-4">
+            <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl p-6" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                  {editTarget ? <Pencil className="w-5 h-5 text-indigo-600" /> : <Plus className="w-5 h-5 text-indigo-600" />}
+                </div>
+                <h2 className="text-lg font-bold text-slate-900">{editTarget ? t('editCategory') : t('addCategory')}</h2>
               </div>
 
-              {formError && <p className="text-xs text-red-600">{formError}</p>}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Name (Arabic) *</label>
+                  <input type="text" value={formNameAr} onChange={(e) => setFormNameAr(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Name (English) *</label>
+                  <input type="text" value={formNameEn} onChange={(e) => setFormNameEn(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Sort Order</label>
+                  <input type="number" value={formSortOrder} onChange={(e) => setFormSortOrder(Number(e.target.value))}
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
 
-              <div className="flex gap-2 justify-end pt-2">
-                <button onClick={() => { setShowForm(false); setEditTarget(null); }}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
-                  {t('cancel')}
-                </button>
-                <button onClick={handleFormSubmit} disabled={formLoading}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50">
-                  {formLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t('save')}
-                </button>
+                {formError && <p className="text-xs text-red-600">{formError}</p>}
+
+                <div className="flex gap-2 justify-end pt-2">
+                  <button onClick={() => { setShowForm(false); setEditTarget(null); }}
+                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+                    {t('cancel')}
+                  </button>
+                  <button onClick={handleFormSubmit} disabled={formLoading}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50">
+                    {formLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {t('save')}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -364,28 +322,38 @@ export function AdminCategories() {
       )}
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setDeleteTarget(null)}>
-          <div className="absolute inset-0 bg-black/30" />
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
-                <Trash2 className="w-5 h-5 text-red-600" />
+        <div className="fixed inset-0 z-50 overflow-y-auto" onClick={() => setDeleteTarget(null)}>
+          <div className="fixed inset-0 bg-black/30" />
+          <div className="min-h-full flex items-center justify-center p-4 pb-16 md:pb-4">
+            <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">{t('deleteCategory')}</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">{t('deleteConfirm')}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">{t('deleteConfirm')} &quot;{deleteTarget.nameEn}&quot;?</h3>
-                <p className="text-sm text-slate-500 mt-0.5">{t('deleteCategory')}</p>
+
+              <p className="text-sm text-slate-700 mb-2">
+                {language === 'ar' ? deleteTarget.nameAr : deleteTarget.nameEn}
+              </p>
+              <p className="text-xs text-slate-500 mb-4">
+                {t('deleteWarning')}
+              </p>
+
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setDeleteTarget(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+                  {t('cancel')}
+                </button>
+                <button onClick={handleDelete} disabled={deleteLoading}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">
+                  {deleteLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t('delete')}
+                </button>
               </div>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
-                {t('cancel')}
-              </button>
-              <button onClick={handleDelete} disabled={deleteLoading}
-                className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50">
-                {deleteLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {t('delete')}
-              </button>
             </div>
           </div>
         </div>

@@ -3,6 +3,14 @@ import { DollarSign, ShoppingCart, TrendingUp, TrendingDown, Package, Download, 
 import { useLanguage, toArabicNumeral } from '../../i18n';
 import { supplierService, type SupplierReportsResponse } from '../../services/supplier.service';
 
+const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAMES_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+function monthLabel(month: string, lang: string): string {
+  const m = parseInt(month.slice(5), 10);
+  return lang === 'ar' ? MONTH_NAMES_AR[m - 1] || month : MONTH_NAMES_EN[m - 1] || month;
+}
+
 export function SupplierReports() {
   const { language, t } = useLanguage();
   const [data, setData] = useState<SupplierReportsResponse | null>(null);
@@ -105,7 +113,7 @@ export function SupplierReports() {
                       return <div key={s.key} className={`w-full ${s.color} rounded-t`} style={{ height: `${segHeight}%`, minHeight: s.val > 0 ? '3px' : '0' }} title={`${s.key}: ${s.val}`} />;
                     })}
                   </div>
-                  <span className="text-[10px] text-slate-400">{m.month.slice(5)}</span>
+                  <span className="text-[10px] text-slate-400">{monthLabel(m.month, language)}</span>
                 </div>
               );
             })}
@@ -124,7 +132,7 @@ export function SupplierReports() {
             {data.revenueTrend.map(m => (
               <div key={m.month} className="flex-1 flex flex-col items-center gap-0.5" style={{ height: '7rem' }}>
                 <div className="w-full bg-gradient-to-t from-emerald-400 to-emerald-300 rounded-t" style={{ height: `${maxTrend > 0 ? (m.total / maxTrend) * 100 : 0}%`, minHeight: m.total > 0 ? '3px' : '0' }} title={`${m.month}: ${m.total}`} />
-                <span className="text-[10px] text-slate-400">{m.month.slice(5)}</span>
+                <span className="text-[10px] text-slate-400">{monthLabel(m.month, language)}</span>
               </div>
             ))}
           </div>

@@ -247,14 +247,15 @@ export function AdminUsers() {
 
       {(selectedBuyer || detailLoading) && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 overflow-y-auto"
           onClick={() => { setSelectedBuyer(null); setDetailLoading(false); }}
         >
-          <div className="absolute inset-0 bg-black/30" />
-          <div
-            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="fixed inset-0 bg-black/30" />
+          <div className="min-h-full flex items-center justify-center p-4 pb-16 md:pb-4">
+            <div
+              className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
             {detailLoading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -417,20 +418,22 @@ export function AdminUsers() {
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
       )}
 
       {confirmTarget && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] overflow-y-auto"
           onClick={() => { setConfirmTarget(null); setSuspendReason(''); }}
         >
-          <div className="absolute inset-0 bg-black/40" />
-          <div
-            className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="fixed inset-0 bg-black/40" />
+          <div className="min-h-full flex items-center justify-center p-4 pb-16 md:pb-4">
+            <div
+              className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
             <div className="flex items-center gap-3 mb-4">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                 confirmTarget.action === 'suspend' ? 'bg-amber-100' : 'bg-emerald-100'
@@ -480,6 +483,7 @@ export function AdminUsers() {
                 {confirmLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {confirmTarget.action === 'suspend' ? t('confirmSuspend') : t('confirmReactivate')}
               </button>
+            </div>
             </div>
           </div>
         </div>

@@ -292,9 +292,10 @@ export function AdminSuppliers() {
       </div>
 
       {selectedSupplier && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { setSelectedSupplier(null); setExpandedProduct(null); }}>
-          <div className="absolute inset-0 bg-black/30" />
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto" onClick={() => { setSelectedSupplier(null); setExpandedProduct(null); }}>
+          <div className="fixed inset-0 bg-black/30" />
+          <div className="min-h-full flex items-center justify-center p-4 pb-16 md:pb-4">
+            <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
@@ -552,18 +553,20 @@ export function AdminSuppliers() {
             </div>
           </div>
         </div>
+        </div>
       )}
 
       {confirmTarget && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] overflow-y-auto"
           onClick={() => { setConfirmTarget(null); setConfirmReason(''); }}
         >
-          <div className="absolute inset-0 bg-black/40" />
-          <div
-            className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="fixed inset-0 bg-black/40" />
+          <div className="min-h-full flex items-center justify-center p-4 pb-16 md:pb-4">
+            <div
+              className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
             <div className="flex items-center gap-3 mb-4">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                 confirmTarget.action === 'approve' ? 'bg-emerald-100' :
@@ -624,6 +627,7 @@ export function AdminSuppliers() {
                 {confirmTarget.action === 'suspend' && t('confirmSuspend')}
                 {confirmTarget.action === 'reactivate' && t('confirmReactivate')}
               </button>
+            </div>
             </div>
           </div>
         </div>

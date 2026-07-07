@@ -192,9 +192,10 @@ export function AdminOrders() {
       </div>
 
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { setSelectedOrder(null); setOrderDetail(null); }}>
-          <div className="absolute inset-0 bg-black/30" />
-          <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 overflow-y-auto" onClick={() => { setSelectedOrder(null); setOrderDetail(null); }}>
+          <div className="fixed inset-0 bg-black/30" />
+          <div className="min-h-full flex items-center justify-center p-4 pb-16 md:pb-4">
+            <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">{selectedOrder.title}</h2>
@@ -366,6 +367,7 @@ export function AdminOrders() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       )}
     </div>

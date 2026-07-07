@@ -3,6 +3,14 @@ import { BarChart3, Users, ShoppingCart, TrendingUp, Package, MapPin, Truck, Dol
 import { useLanguage, toArabicNumeral } from '../../i18n';
 import { adminService, type AdminReportsResponse } from '../../services/admin.service';
 
+const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAMES_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+function monthLabel(month: string, lang: string): string {
+  const m = parseInt(month.slice(5), 10);
+  return lang === 'ar' ? MONTH_NAMES_AR[m - 1] || month : MONTH_NAMES_EN[m - 1] || month;
+}
+
 type BarItem = { label: string; value: number; color: string };
 
 function BarChart({ items, maxValue, unit }: { items: BarItem[]; maxValue?: number; unit?: string }) {
@@ -26,7 +34,7 @@ function BarChart({ items, maxValue, unit }: { items: BarItem[]; maxValue?: numb
   );
 }
 
-function MiniBarChart({ data, bars, height = 'h-20' }: { data: { month: string; values: number[] }[]; bars: { key: string; color: string }[]; height?: string }) {
+function MiniBarChart({ data, bars, lang }: { data: { month: string; values: number[] }[]; bars: { key: string; color: string }[]; lang: string }) {
   const maxVal = Math.max(...data.flatMap(d => d.values), 1);
   return (
     <div className="flex items-end gap-1" style={{ minHeight: '5rem' }}>
@@ -40,7 +48,7 @@ function MiniBarChart({ data, bars, height = 'h-20' }: { data: { month: string; 
               title={`${d.month}: ${v}`}
             />
           ))}
-          <span className="text-[10px] text-slate-400 mt-0.5">{d.month.slice(5)}</span>
+          <span className="text-[10px] text-slate-400 mt-0.5">{monthLabel(d.month, lang)}</span>
         </div>
       ))}
     </div>
@@ -87,7 +95,7 @@ export function AdminReports() {
   const statusColors: Record<string, string> = { Open: 'bg-blue-500', Closed: 'bg-amber-500', Completed: 'bg-emerald-500', Cancelled: 'bg-red-500', Draft: 'bg-slate-400', PendingApproval: 'bg-purple-500', Locked: 'bg-cyan-500' };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{t('reports')}</h1>
@@ -129,7 +137,7 @@ export function AdminReports() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-slate-200 p-4 lg:col-span-2">
-          <h2 className="text-sm font-bold text-slate-900 mb-3">{language === 'ar' ? 'اتجاهات المستخدمين' : 'Users Trend'} (12 {language === 'ar' ? 'شهراً' : 'months'})</h2>
+            <h2 className="text-sm font-bold text-slate-900 mb-3">{language === 'ar' ? 'اتجاهات المستخدمين' : 'Users Trend'} (2026)</h2>
           <div className="flex items-end gap-1.5" style={{ minHeight: '7rem' }}>
             {data.usersTrend.map(m => {
               const max = Math.max(...data.usersTrend.flatMap(x => [x.buyers, x.suppliers, x.delivery]), 1);
@@ -140,7 +148,7 @@ export function AdminReports() {
                     <div className="w-full bg-amber-200 rounded-t" style={{ height: `${(m.suppliers / max) * 100}%`, minHeight: m.suppliers > 0 ? '3px' : '0' }} title={`Suppliers: ${m.suppliers}`} />
                     <div className="w-full bg-indigo-300 rounded-t" style={{ height: `${(m.buyers / max) * 100}%`, minHeight: m.buyers > 0 ? '3px' : '0' }} title={`Buyers: ${m.buyers}`} />
                   </div>
-                  <span className="text-[10px] text-slate-400">{m.month.slice(5)}</span>
+                  <span className="text-[10px] text-slate-400">{monthLabel(m.month, language)}</span>
                 </div>
               );
             })}
@@ -191,7 +199,7 @@ export function AdminReports() {
                       return <div key={s.key} className={`w-full ${s.color} rounded-t`} style={{ height: `${segHeight}%`, minHeight: s.val > 0 ? '3px' : '0' }} title={`${s.key}: ${s.val}`} />;
                     })}
                   </div>
-                  <span className="text-[10px] text-slate-400">{m.month.slice(5)}</span>
+                  <span className="text-[10px] text-slate-400">{monthLabel(m.month, language)}</span>
                 </div>
               );
             })}
@@ -212,7 +220,7 @@ export function AdminReports() {
               return (
                 <div key={m.month} className="flex-1 flex flex-col items-center gap-0.5" style={{ height: '7rem' }}>
                   <div className="w-full bg-gradient-to-t from-emerald-400 to-emerald-300 rounded-t" style={{ height: `${(m.total / maxRev) * 100}%`, minHeight: m.total > 0 ? '3px' : '0' }} title={`${m.month}: ${m.total}`} />
-                  <span className="text-[10px] text-slate-400">{m.month.slice(5)}</span>
+                  <span className="text-[10px] text-slate-400">{monthLabel(m.month, language)}</span>
                 </div>
               );
             })}
