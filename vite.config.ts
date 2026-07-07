@@ -19,7 +19,7 @@ export default defineConfig(() => {
       watch: process.env.DISABLE_HMR === "true" ? null : {},
       proxy: {
         "/api": {
-          target: "http://tawreed-api.runasp.net",
+          target: "https://tawreed-api.runasp.net",
           secure: false,
           changeOrigin: true,
         },
