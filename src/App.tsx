@@ -39,6 +39,8 @@ import { AdminRegions } from "./pages/admin/Regions";
 import { AdminReports } from "./pages/admin/Reports";
 import { AdminSettings } from "./pages/admin/Settings";
 import { AdminProfile } from "./pages/admin/Profile";
+import { AdminSearchPage } from "./pages/admin/AdminSearchPage";
+import { BuyerSearchPage } from "./pages/buyer/BuyerSearchPage";
 import { DeliveryPersonDashboard } from "./pages/delivery/Dashboard";
 import { DeliveryPersonDeliveries } from "./pages/delivery/Deliveries";
 import { DeliveryPersonDeliveryDetail } from "./pages/delivery/DeliveryDetail";
@@ -128,6 +130,7 @@ function AppRoutes() {
           <Route path="notifications" element={<Notifications />} />
           <Route path="deliveries" element={<BuyerDeliveries />} />
           <Route path="profile" element={<BuyerProfile />} />
+          <Route path="search" element={<BuyerSearchPage />} />
         </Route>
 
         <Route
@@ -165,6 +168,7 @@ function AppRoutes() {
           <Route path="reports" element={<AdminReports />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="profile" element={<AdminProfile />} />
+          <Route path="search" element={<AdminSearchPage />} />
         </Route>
 
         <Route

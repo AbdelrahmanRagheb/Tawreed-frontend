@@ -145,7 +145,14 @@ export function AdminLayout() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => { if (searchResults && totalResults > 0) setShowDropdown(true); }}
+                  onPointerDown={() => {
+                    if (window.innerWidth < 768) {
+                      navigate(`/admin/search?q=${encodeURIComponent(searchQuery)}`);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (window.innerWidth >= 768 && searchResults && totalResults > 0) setShowDropdown(true);
+                  }}
                   placeholder={t("searchSupplies")}
                   className="w-full pl-12 pr-10 py-3.5 bg-white/85 backdrop-blur-xl border border-white/70 rounded-[2rem] text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] shadow-xl shadow-slate-200/60 placeholder:text-slate-400"
                 />
