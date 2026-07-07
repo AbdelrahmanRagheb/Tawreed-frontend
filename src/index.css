@@ -86,3 +86,7 @@
 [dir="rtl"] {
   font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
 }
+
+.h-safe-area-inset-bottom {
+  height: env(safe-area-inset-bottom, 0px);
+}

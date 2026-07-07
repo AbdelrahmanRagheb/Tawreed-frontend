@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Truck, Package, Clock, CheckCircle, XCircle, AlertCircle, User, Calendar } from "lucide-react";
 import { useLanguage, toArabicNumeral } from "../../i18n";
 import { useAuth } from "../../contexts/AuthContext";
@@ -21,13 +21,23 @@ export function BuyerDeliveries() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  const fetchDeliveries = async (silent = false) => {
     if (!user?.id) return;
-    setLoading(true);
-    buyerService.getMyDeliveries()
-      .then((res) => setDeliveries(res.data))
-      .catch((err) => setError(err?.response?.data?.message || err?.message || "Failed to load deliveries"))
-      .finally(() => setLoading(false));
+    if (!silent) setLoading(true);
+    try {
+      const res = await buyerService.getMyDeliveries();
+      setDeliveries(res.data);
+    } catch (err: any) {
+      if (!silent) setError(err?.response?.data?.message || err?.message || "Failed to load deliveries");
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDeliveries();
+    const interval = setInterval(() => fetchDeliveries(true), 30000);
+    return () => clearInterval(interval);
   }, [user?.id]);
 
   const getStepIndex = (status: string) => {
@@ -104,40 +114,69 @@ export function BuyerDeliveries() {
                       const isFuture = idx > currentStep;
 
                       return (
-                        <div key={step} className="flex-1 flex flex-col items-center relative">
-                          {/* Connector line */}
+                        <div
+                          key={step}
+                          className="flex-1 flex flex-col items-center relative"
+                        >
+                          {/* Connector line - Adjusted for LTR/RTL layout direction */}
                           {idx > 0 && (
-                            <div className={`absolute top-3.5 right-1/2 w-full h-0.5 -translate-y-1/2 ${
-                              isCompleted ? "bg-emerald-500" : isCurrent ? "bg-amber-400" : "bg-slate-200"
-                            }`} />
+                            <div
+                              className={`absolute top-3.5 w-full h-0.5 -translate-y-1/2 ${
+                                language === "ar" ? "left-1/2" : "right-1/2"
+                              } ${
+                                isCompleted
+                                  ? "bg-emerald-500"
+                                  : isCurrent
+                                    ? "bg-amber-400"
+                                    : "bg-slate-200"
+                              }`}
+                            />
                           )}
+
                           {/* Dot */}
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center z-10 ${
-                            isCompleted ? "bg-emerald-500 text-white" :
-                            isCurrent ? "bg-amber-400 text-white ring-4 ring-amber-100 animate-pulse" :
-                            "bg-slate-200 text-slate-400"
-                          }`}>
+                          <div
+                            className={`w-7 h-7 rounded-full flex items-center justify-center z-10 ${
+                              isCompleted
+                                ? "bg-emerald-500 text-white"
+                                : isCurrent
+                                  ? "bg-amber-400 text-white ring-4 ring-amber-100 animate-pulse"
+                                  : "bg-slate-200 text-slate-400"
+                            }`}
+                          >
                             {isCompleted ? (
                               <CheckCircle className="w-4 h-4" />
                             ) : (
-                              <div className={`w-2.5 h-2.5 rounded-full ${isCurrent ? "bg-white" : "bg-slate-400"}`} />
+                              <div
+                                className={`w-2.5 h-2.5 rounded-full ${isCurrent ? "bg-white" : "bg-slate-400"}`}
+                              />
                             )}
                           </div>
-                          {/* Label */}
-                          <p className={`text-[10px] mt-1.5 text-center leading-tight ${
-                            isCompleted ? "text-emerald-700 font-semibold" :
-                            isCurrent ? "text-amber-700 font-semibold" :
-                            "text-slate-400"
-                          }`}>
+
+                          {/* Label - Added whitespace-nowrap to prevent text wrapping */}
+                          <p
+                            className={`text-[10px] mt-1.5 text-center leading-tight whitespace-nowrap ${
+                              isCompleted
+                                ? "text-emerald-700 font-semibold"
+                                : isCurrent
+                                  ? "text-amber-700 font-semibold"
+                                  : "text-slate-400"
+                            }`}
+                          >
                             {language === "ar"
-                              ? (step === "Pending" ? "قيد الانتظار" :
-                                 step === "PickedUp" ? "تم الاستلام" :
-                                 step === "OutForDelivery" ? "قيد التوصيل" :
-                                 "تم التسليم")
-                              : step === "Pending" ? "Pending" :
-                                step === "PickedUp" ? "Picked Up" :
-                                step === "OutForDelivery" ? "On Route" :
-                                "Delivered"}
+                              ? step === "Pending"
+                                ? "قيد الانتظار"
+                                : step === "PickedUp"
+                                  ? "تم الاستلام"
+                                  : step === "OutForDelivery"
+                                    ? "قيد التوصيل"
+                                    : "تم التسليم"
+                              : step === "Pending"
+                                ? "Pending"
+                                : step === "PickedUp"
+                                  ? "Picked Up"
+                                  : step === "OutForDelivery"
+                                    ? "On Route"
+                                    : "Delivered"}
                           </p>
                         </div>
                       );

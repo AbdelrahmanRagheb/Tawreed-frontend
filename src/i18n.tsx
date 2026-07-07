@@ -211,6 +211,7 @@ export const translations = {
   loggedInAs: { en: "Logged in as", ar: "مسجل الدخول كـ" },
   myActiveOrders: { en: "My Active Orders", ar: "طلباتي النشطة" },
   ordersNearYou: { en: "Orders Near You", ar: "الطلبات القريبة منك" },
+  noNearbyOrders: { en: "No orders near you yet", ar: "لا توجد طلبات قريبة منك بعد" },
   totalSavings: { en: "Total Savings", ar: "إجمالي التوفير" },
   trendingProducts: { en: "Trending Products", ar: "المنتجات الرائجة" },
   join: { en: "Join", ar: "انضمام" },

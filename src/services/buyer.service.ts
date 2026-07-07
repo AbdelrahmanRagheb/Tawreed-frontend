@@ -273,6 +273,11 @@ export interface SupplierPublicProfile {
   products: SupplierPublicProduct[];
 }
 
+export interface SearchResult {
+  products: { id: string; name: string; price: number; categoryName: string }[];
+  orders: { id: string; title: string; status: string }[];
+}
+
 export const buyerService = {
   getDashboard: (regionId?: string) =>
     http.get<BuyerDashboardResponse>('/buyer/dashboard', {
@@ -326,6 +331,9 @@ export const buyerService = {
 
   getMyDeliveries: () =>
     http.get<BuyerDeliveryDto[]>('/buyer/deliveries'),
+
+  search: (q: string) =>
+    http.get<SearchResult>('/buyer/search', { params: { q } }),
 
 };
 

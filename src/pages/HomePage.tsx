@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useLanguage } from "../i18n";
+import { useLanguage, toArabicNumeral } from "../i18n";
 
 import {
   Globe2,
@@ -19,12 +19,11 @@ import {
   CheckCircle2,
   Star,
   Zap,
-  TrendingUp,
-  ArrowUpRight,
   Check,
   ShieldAlert,
   Award,
   Landmark,
+  Search,
 } from "lucide-react";
 
 function scrollTo(id: string) {
@@ -36,6 +35,7 @@ export function HomePage() {
   const isRTL = language === "ar";
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [previewTab, setPreviewTab] = useState("orders");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -371,118 +371,30 @@ export function HomePage() {
               </div>
             </div>
 
-            {/* Right Column (Visual / Interactive Dashboard Mockup) */}
+            {/* Right Column — Live App Preview */}
             <div className="lg:col-span-5 relative">
               <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-500 to-emerald-500 rounded-3xl opacity-10 blur-xl pointer-events-none" />
 
-              <div className="relative rounded-2xl bg-slate-900 text-slate-100 p-5 sm:p-6 shadow-2xl border border-slate-800">
-                {/* Simulated UI Window Bar */}
-                <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
-                  <div className="flex gap-1.5">
-                    <span className="w-3 h-3 rounded-full bg-rose-500/80" />
-                    <span className="w-3 h-3 rounded-full bg-amber-500/80" />
-                    <span className="w-3 h-3 rounded-full bg-emerald-500/80" />
-                  </div>
-                  <span className="text-2xs font-mono text-slate-500">
-                    tawreed-dashboard-v2
-                  </span>
+              <div className="relative rounded-[2rem] bg-white/85 backdrop-blur-xl border border-white/70 p-5 sm:p-6 shadow-2xl shadow-slate-200/70">
+                {/* Tabs */}
+                <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-5">
+                  {[
+                    { key: "orders", label: language === "ar" ? "الطلبات" : "Orders" },
+                    { key: "products", label: language === "ar" ? "المنتجات" : "Products" },
+                    { key: "tracking", label: language === "ar" ? "التتبع" : "Tracking" },
+                  ].map((tab) => (
+                    <PreviewTab
+                      key={tab.key}
+                      active={previewTab === tab.key}
+                      label={tab.label}
+                      onClick={() => setPreviewTab(tab.key)}
+                    />
+                  ))}
                 </div>
 
-                {/* Simulated Dashboard Content */}
-                <div className="space-y-4">
-                  {/* Metric Row */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-slate-850/60 border border-slate-800 rounded-xl p-3.5">
-                      <p className="text-2xs font-semibold text-slate-400 mb-0.5">
-                        {language === "ar" ? "توفير التكاليف" : "Cost Savings"}
-                      </p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-bold text-white">
-                          24.5%
-                        </span>
-                        <span className="text-3xs text-emerald-400 font-bold flex items-center">
-                          ↑ 4%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="bg-slate-850/60 border border-slate-800 rounded-xl p-3.5">
-                      <p className="text-2xs font-semibold text-slate-400 mb-0.5">
-                        {language === "ar" ? "سرعة التوريد" : "Lead Time"}
-                      </p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-bold text-white">
-                          -1.8 {language === "ar" ? "يوم" : "days"}
-                        </span>
-                        <span className="text-3xs text-emerald-400 font-bold">
-                          ✓ {language === "ar" ? "أسرع" : "Optimal"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Simulated List Item */}
-                  <div className="bg-slate-850/60 border border-slate-800 rounded-xl p-3.5 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-2xs font-bold text-slate-300">
-                        {language === "ar"
-                          ? "طلبات عروض الأسعار النشطة"
-                          : "Active RFQs"}
-                      </span>
-                      <span className="px-2 py-0.5 text-3xs font-bold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                        {language === "ar" ? "قيد المراجعة" : "Matching"}
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800 text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                          <span className="font-medium text-slate-200">
-                            {language === "ar"
-                              ? "ألواح حديد صناعي"
-                              : "Industrial Steel Plates"}
-                          </span>
-                        </div>
-                        <span className="text-3xs font-mono text-slate-400">
-                          14 {language === "ar" ? "طن" : "Tons"}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800 text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                          <span className="font-medium text-slate-200">
-                            {language === "ar"
-                              ? "أسمنت بورتلاندي"
-                              : "Portland Cement"}
-                          </span>
-                        </div>
-                        <span className="text-3xs font-mono text-slate-400">
-                          250 {language === "ar" ? "طن" : "Tons"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mini status visual */}
-                  <div className="flex items-center gap-3 bg-indigo-950/40 border border-indigo-900/40 rounded-xl p-3 text-xs">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-900/60 flex items-center justify-center shrink-0 text-indigo-400">
-                      <TrendingUp className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-slate-200 truncate">
-                        {language === "ar"
-                          ? "توصيل عروض أسعار فوري"
-                          : "Automated Bidding Live"}
-                      </p>
-                      <p className="text-3xs text-slate-400 truncate">
-                        {language === "ar"
-                          ? "مقارنة الأسعار مع ضمان الأمان"
-                          : "Secure commercial offers matched"}
-                      </p>
-                    </div>
-                    <ArrowUpRight className="w-4.5 h-4.5 text-slate-500 shrink-0" />
-                  </div>
-                </div>
+                {previewTab === "orders" && <OrdersPreview language={language} toArabicNumeral={toArabicNumeral} />}
+                {previewTab === "products" && <ProductsPreview language={language} toArabicNumeral={toArabicNumeral} />}
+                {previewTab === "tracking" && <TrackingPreview language={language} toArabicNumeral={toArabicNumeral} />}
               </div>
             </div>
           </div>
@@ -769,6 +681,182 @@ export function HomePage() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function PreviewTab({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+        active
+          ? "bg-gradient-to-l from-[#1e3a8a] to-[#2563eb] text-white shadow-md"
+          : "text-slate-500 hover:text-slate-700"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function OrdersPreview({ language, toArabicNumeral }: { language: string; toArabicNumeral: (s: string, l: string) => string }) {
+  const items = [
+    { name: language === "ar" ? "أرز بسمتي" : "Basmati Rice", qty: 50, price: 38 },
+    { name: language === "ar" ? "سكر" : "Sugar", qty: 100, price: 22 },
+    { name: language === "ar" ? "زيت طعام" : "Cooking Oil", qty: 30, price: 46 },
+    { name: language === "ar" ? "دقيق قمح" : "Wheat Flour", qty: 75, price: 18 },
+  ];
+  const total = items.reduce((s, i) => s + i.qty * i.price, 0);
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-[1fr_60px_70px] gap-2 text-xs text-slate-400 pb-2 border-b border-slate-100">
+        <span className="font-semibold text-slate-700">{language === "ar" ? "المنتج" : "Product"}</span>
+        <span className="font-semibold text-slate-700 text-center">{language === "ar" ? "الكمية" : "Qty"}</span>
+        <span className="font-semibold text-slate-700 text-right">{language === "ar" ? "السعر" : "Price"}</span>
+      </div>
+      {items.map((item, i) => (
+        <div key={i} className="grid grid-cols-[1fr_60px_70px] gap-2 text-sm py-1.5">
+          <span className="font-medium text-slate-900 truncate">{item.name}</span>
+          <span className="font-semibold text-slate-900 text-center">{toArabicNumeral(String(item.qty), language)}</span>
+          <span className="font-bold text-[#1e3a8a] text-right">{toArabicNumeral(String(item.price), language)}</span>
+        </div>
+      ))}
+      <div className="flex items-center justify-between pt-3 mt-1 border-t border-slate-100">
+        <span className="text-xs font-bold text-slate-500">{language === "ar" ? "إجمالي القيمة" : "Total Value"}</span>
+        <span className="text-lg font-extrabold text-[#1e3a8a]">{toArabicNumeral(total.toLocaleString(), language)} {language === "ar" ? "ج.م" : "EGP"}</span>
+      </div>
+      <button className="w-full py-2.5 text-xs font-bold text-white bg-gradient-to-l from-[#1e3a8a] to-[#2563eb] rounded-xl shadow-md shadow-blue-900/20 hover:shadow-lg transition">
+        {language === "ar" ? "تقديم الطلب" : "Submit Order"}
+      </button>
+    </div>
+  );
+}
+
+function ProductsPreview({ language, toArabicNumeral }: { language: string; toArabicNumeral: (s: string, l: string) => string }) {
+  const products = [
+    { name: language === "ar" ? "أرز بسمتي هندي" : "Indian Basmati Rice", price: 38, unit: language === "ar" ? "كجم" : "kg" },
+    { name: language === "ar" ? "سكر أبيض" : "White Sugar", price: 22, unit: language === "ar" ? "كجم" : "kg" },
+    { name: language === "ar" ? "زيت عباد شمس" : "Sunflower Oil", price: 46, unit: language === "ar" ? "لتر" : "L" },
+    { name: language === "ar" ? "دقيق قمح فاخر" : "Premium Wheat Flour", price: 18, unit: language === "ar" ? "كجم" : "kg" },
+    { name: language === "ar" ? "عدس أصفر" : "Yellow Lentils", price: 28, unit: language === "ar" ? "كجم" : "kg" },
+    { name: language === "ar" ? "مكرونة" : "Pasta", price: 14, unit: language === "ar" ? "كجم" : "kg" },
+  ];
+
+  return (
+    <div className="space-y-2">
+      <div className="relative mb-3">
+        <input
+          type="text"
+          placeholder={language === "ar" ? "ابحث عن منتج..." : "Search product..."}
+          className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] placeholder:text-slate-400"
+        />
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+      </div>
+      <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+        {products.map((p, i) => (
+          <div key={i} className="border border-slate-100 rounded-xl p-3 hover:border-indigo-200 hover:shadow-sm transition cursor-pointer">
+            <p className="text-xs font-semibold text-slate-900 truncate">{p.name}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {toArabicNumeral(String(p.price), language)} {language === "ar" ? "ج.م" : "EGP"} / {p.unit}
+            </p>
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="text-3xs text-slate-400">{language === "ar" ? "متوفر" : "In Stock"}</span>
+              </div>
+              <span className="text-3xs font-bold text-[#1e3a8a]">{language === "ar" ? "+ أضف" : "+ Add"}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TrackingPreview({ language, toArabicNumeral }: { language: string; toArabicNumeral: (s: string, l: string) => string }) {
+  const STEPS = ["Pending", "PickedUp", "OutForDelivery", "Delivered"] as const;
+
+  const stepLabels: Record<string, { en: string; ar: string }> = {
+    Pending: { en: "Pending", ar: "قيد الانتظار" },
+    PickedUp: { en: "Picked Up", ar: "تم الاستلام" },
+    OutForDelivery: { en: "Out for Delivery", ar: "قيد التوصيل" },
+    Delivered: { en: "Delivered", ar: "تم التسليم" },
+  };
+
+  const currentStepIndex = 2;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold text-slate-900">{language === "ar" ? "توصيلة #٢٤١" : "Delivery #241"}</p>
+        <span className="px-2 py-0.5 text-3xs font-bold bg-amber-100 text-amber-700 rounded-full">
+          {language === "ar" ? "قيد التوصيل" : "On Route"}
+        </span>
+      </div>
+
+      <div className="flex items-center">
+        {STEPS.map((step, idx) => {
+          const isCompleted = idx < currentStepIndex;
+          const isCurrent = idx === currentStepIndex;
+
+          return (
+            <div key={step} className="flex-1 flex flex-col items-center relative">
+              {idx > 0 && (
+                <div
+                  className={`absolute top-2.5 w-full h-0.5 -translate-y-1/2 ${
+                    language === "ar" ? "left-1/2" : "right-1/2"
+                  } ${
+                    isCompleted
+                      ? "bg-emerald-500"
+                      : isCurrent
+                        ? "bg-amber-400"
+                        : "bg-slate-200"
+                  }`}
+                />
+              )}
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center z-10 ${
+                isCompleted
+                  ? "bg-emerald-500 text-white"
+                  : isCurrent
+                    ? "bg-amber-400 text-white ring-4 ring-amber-100"
+                    : "bg-slate-200"
+              }`}>
+                {isCompleted ? (
+                  <Check className="w-3 h-3" />
+                ) : (
+                  <div className={`w-2 h-2 rounded-full ${isCurrent ? "bg-white" : "bg-slate-400"}`} />
+                )}
+              </div>
+              <p className={`text-3xs mt-1.5 text-center whitespace-nowrap ${
+                isCompleted
+                  ? "text-emerald-700 font-semibold"
+                  : isCurrent
+                    ? "text-amber-700 font-semibold"
+                    : "text-slate-400"
+              }`}>
+                {stepLabels[step]?.[language === "ar" ? "ar" : "en"] || step}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="bg-slate-50 rounded-xl p-3 text-xs space-y-2">
+        <div className="flex justify-between">
+          <span className="text-slate-500">{language === "ar" ? "تاريخ التوصيل" : "Delivery Date"}</span>
+          <span className="font-semibold text-slate-900">15 {language === "ar" ? "يوليو" : "Jul"} 2026</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-500">{language === "ar" ? "مندوب التوصيل" : "Delivery Person"}</span>
+          <span className="font-semibold text-slate-900">{language === "ar" ? "محمود سعيد" : "Mahmoud Saeed"}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-500">{language === "ar" ? "رمز التحقق" : "Verification Code"}</span>
+          <span className="font-bold text-[#1e3a8a] tracking-widest">{toArabicNumeral("588810", language)}</span>
+        </div>
+      </div>
     </div>
   );
 }

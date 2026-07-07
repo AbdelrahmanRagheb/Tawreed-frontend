@@ -17,12 +17,13 @@ export function DeliveryPersonDeliveryDetail() {
   const [codeInputs, setCodeInputs] = useState<Record<string, string>>({});
   const [verifyMsg, setVerifyMsg] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (!id) return;
-    deliveryPersonService.getDeliveryDetail(id)
-      .then((res) => {
-        setDelivery(res.data)
-      })
+	  useEffect(() => {
+	    if (!id) return;
+	    deliveryPersonService.getDeliveryDetail(id)
+	      .then((res) => {
+	        console.log('[DeliveryDetail] Full API response:', JSON.stringify(res.data, null, 2));
+	        setDelivery(res.data)
+	      })
       .catch((err) => setError(err?.response?.data?.error || 'Failed to load'))
       .finally(() => setLoading(false));
   }, [id]);
@@ -47,6 +48,7 @@ export function DeliveryPersonDeliveryDetail() {
     try {
       await deliveryPersonService.verifyDelivery(id, invoiceId, { verificationCode: code });
       setVerifyMsg((prev) => ({ ...prev, [invoiceId]: 'verified' }));
+      setDelivery((prev) => prev ? { ...prev, status: 'Delivered' } : prev);
     } catch (err: any) {
       setVerifyMsg((prev) => ({ ...prev, [invoiceId]: err?.response?.data?.error || 'Invalid code' }));
     }
