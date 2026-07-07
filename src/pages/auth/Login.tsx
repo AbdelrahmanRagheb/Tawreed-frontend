@@ -16,7 +16,6 @@ export function Login() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [debugMode, setDebugMode] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,30 +26,11 @@ export function Login() {
     }
     setLoading(true);
     try {
-      if (debugMode) {
-        const res = await authService.debugLogin({ email: email.trim(), password });
-        const { token, refreshToken, user: apiUser } = res.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('refreshToken', refreshToken);
-        const mappedUser = {
-          id: apiUser.id,
-          name: apiUser.name,
-          email: apiUser.email,
-          role: apiUser.role.toLowerCase() as any,
-          avatar: apiUser.avatar,
-          preferredLang: apiUser.preferredLang || 'en',
-        };
-        localStorage.setItem('user', JSON.stringify(mappedUser));
-        localStorage.setItem('preferredLang', mappedUser.preferredLang);
-        window.location.href = '/';
-        return;
-      }
       await login(email.trim(), password);
       navigate('/');
     } catch (err: any) {
-      if (!debugMode && err?.response?.status === 401) {
-        setDebugMode(true);
-        setError('Normal login failed. Debug mode activated — try again with any password.');
+      if (err?.response?.status === 401) {
+        setError(t('invalidCredentials'));
       } else {
         setError(err?.response?.data?.message || err?.message || t('loginFailed'));
       }
@@ -113,9 +93,9 @@ export function Login() {
         <section className="flex justify-center fade-up mt-15">
           <div className="w-full max-w-md">
             {/* Mobile logo */}
-            <div className="mb-6 flex justify-center lg:hidden">
+            <Link to="/" className="mb-6 flex justify-center lg:hidden">
               <img src="/tawreed-logo.png" alt="Tawreed" className="h-24 w-auto" />
-            </div>
+            </Link>
 
             <div className="rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-xl shadow-slate-200/60 backdrop-blur sm:p-10">
               <div className="mb-7 text-center">
@@ -208,15 +188,7 @@ export function Login() {
                   </div>
                 )}
 
-                {/* Debug info */}
-                {debugMode && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
-                    <p className="font-bold mb-1">Mock accounts:</p>
-                    <p>admin@tawreed.com / admin123</p>
-                    <p>buyer@tawreed.com / buyer123</p>
-                    <p>supplier@tawreed.com / supplier123</p>
-                  </div>
-                )}
+
 
                 {/* Submit */}
                 <button

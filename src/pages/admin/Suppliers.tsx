@@ -43,6 +43,14 @@ export function AdminSuppliers() {
     setSearchParams(statusFilter === 'all' ? {} : { status: statusFilter }, { replace: true });
   }, [statusFilter]);
 
+  useEffect(() => {
+    const detailId = searchParams.get('detail');
+    if (detailId && suppliers.length > 0) {
+      const supplier = suppliers.find(s => s.id === detailId);
+      if (supplier) openDetail(supplier);
+    }
+  }, [searchParams, suppliers]);
+
   const filtered = suppliers.filter((s) => {
     const q = search.toLowerCase();
     return !search ||

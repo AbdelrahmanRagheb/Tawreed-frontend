@@ -166,9 +166,9 @@ export function Register() {
         <section className="flex justify-center fade-up">
           <div className="w-full max-w-md">
             {/* Mobile logo */}
-            <div className="mb-6 flex justify-center lg:hidden">
+            <Link to="/" className="mb-6 flex justify-center lg:hidden">
               <img src="/tawreed-logo.png" alt="Tawreed" className="h-24 w-auto" />
-            </div>
+            </Link>
 
             <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-xl shadow-slate-200/60 backdrop-blur sm:p-10">
               <div className="mb-6 text-center">

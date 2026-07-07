@@ -239,7 +239,29 @@ export interface RegionStats {
   villages: number;
 }
 
+export interface AdminReportsResponse {
+  usersTrend: { month: string; buyers: number; suppliers: number; delivery: number }[];
+  ordersTrend: { month: string; total: number; open: number; closed: number; completed: number; cancelled: number }[];
+  revenueTrend: { month: string; total: number }[];
+  orderStatusDistribution: { status: string; count: number }[];
+  topCategories: { categoryName: string; orderCount: number }[];
+  regionalDistribution: { regionNameEn: string; regionNameAr: string; orderCount: number }[];
+  deliveryPerformance: { total: number; delivered: number; failed: number; outForDelivery: number; preparing: number; pending: number; shipped: number };
+}
+
+export interface AdminSearchResult {
+  users: { id: string; name: string; email: string; phone: string | null; role: string }[];
+  suppliers: { id: string; companyName: string; email: string; phone: string | null; status: string }[];
+  orders: { id: string; title: string; status: string; buyerName: string }[];
+  products: { id: string; name: string; categoryName: string; marketPrice: number | null }[];
+}
+
 export const adminService = {
+  getReports: () =>
+    http.get<AdminReportsResponse>('/admin/reports'),
+  search: (q: string) =>
+    http.get<AdminSearchResult>('/admin/search', { params: { q } }),
+
   getDashboard: () =>
     http.get<AdminDashboardResponse>('/admin/dashboard'),
 

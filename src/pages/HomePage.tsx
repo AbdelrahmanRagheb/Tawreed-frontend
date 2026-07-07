@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useLanguage, toArabicNumeral } from "../i18n";
+import { useAuth } from "../contexts/AuthContext";
 
 import {
   Globe2,
   Menu,
   X,
   ArrowRight,
+  LayoutDashboard,
   Sparkles,
   Truck,
   BarChart3,
@@ -33,6 +35,9 @@ function scrollTo(id: string) {
 export function HomePage() {
   const { language, setLanguage, t } = useLanguage();
   const isRTL = language === "ar";
+  const { user, role } = useAuth();
+  const isLoggedIn = !!user;
+  const dashboardUrl = role === 'admin' ? '/admin' : role === 'buyer' ? '/buyer' : role === 'supplier' ? '/supplier' : '/delivery';
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [previewTab, setPreviewTab] = useState("orders");
@@ -194,36 +199,75 @@ export function HomePage() {
                 {language === "ar" ? "English" : "العربية"}
               </button>
 
-              <Link
-                to="/auth/login"
-                className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-indigo-600 transition-all"
-              >
-                {t("login")}
-              </Link>
+              {isLoggedIn ? (
+                <Link
+                  to={dashboardUrl}
+                  className="inline-flex items-center gap-1.5 px-4.5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-600/10 hover:shadow-md hover:shadow-indigo-600/20 active:scale-98"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  {t("dashboard")}
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/auth/login"
+                    className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-indigo-600 transition-all"
+                  >
+                    {t("login")}
+                  </Link>
 
-              <Link
-                to="/auth/register"
-                className="inline-flex items-center gap-1.5 px-4.5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-600/10 hover:shadow-md hover:shadow-indigo-600/20 active:scale-98"
-              >
-                {t("createAccount")}
-                <ArrowRight
-                  className={`w-3.5 h-3.5 ${isRTL ? "rotate-180" : ""}`}
-                />
-              </Link>
+                  <Link
+                    to="/auth/register"
+                    className="inline-flex items-center gap-1.5 px-4.5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-600/10 hover:shadow-md hover:shadow-indigo-600/20 active:scale-98"
+                  >
+                    {t("createAccount")}
+                    <ArrowRight
+                      className={`w-3.5 h-3.5 ${isRTL ? "rotate-180" : ""}`}
+                    />
+                  </Link>
+                </>
+              )}
             </div>
 
-            {/* Mobile hamburger */}
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
-              aria-label={menuOpen ? t("closeMenu") : t("menu")}
-            >
-              {menuOpen ? (
-                <X className="w-5 h-5" />
+            {/* Mobile right actions */}
+            <div className="md:hidden flex items-center gap-1.5">
+              <button
+                onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
+                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-[11px] font-semibold transition-all"
+              >
+                <Globe2 className="w-3.5 h-3.5" />
+                {language === "ar" ? "English" : "العربية"}
+              </button>
+
+              {isLoggedIn ? (
+                <Link
+                  to={dashboardUrl}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all active:scale-98"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  {t("dashboard")}
+                </Link>
               ) : (
-                <Menu className="w-5 h-5" />
+                <Link
+                  to="/auth/login"
+                  className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-indigo-600 transition-all"
+                >
+                  {t("login")}
+                </Link>
               )}
-            </button>
+
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                aria-label={menuOpen ? t("closeMenu") : t("menu")}
+              >
+                {menuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -255,34 +299,15 @@ export function HomePage() {
                 {language === "ar" ? "لماذا توريد؟" : "Why Tawreed?"}
               </button>
               <hr className="border-slate-100 my-2" />
-              <div className="flex items-center justify-between px-4 pt-1">
-                <button
-                  onClick={() => {
-                    setLanguage(language === "ar" ? "en" : "ar");
-                    setMenuOpen(false);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:text-indigo-600 transition-all"
+              {!isLoggedIn && (
+                <Link
+                  to="/auth/register"
+                  onClick={() => setMenuOpen(false)}
+                  className="w-full px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all text-center block"
                 >
-                  <Globe2 className="w-3.5 h-3.5" />
-                  {language === "ar" ? "English" : "العربية"}
-                </button>
-                <div className="flex items-center gap-2">
-                  <Link
-                    to="/auth/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-all"
-                  >
-                    {t("login")}
-                  </Link>
-                  <Link
-                    to="/auth/register"
-                    onClick={() => setMenuOpen(false)}
-                    className="inline-flex items-center gap-1 px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all"
-                  >
-                    {t("createAccount")}
-                  </Link>
-                </div>
-              </div>
+                  {t("createAccount")}
+                </Link>
+              )}
             </div>
           </div>
         )}

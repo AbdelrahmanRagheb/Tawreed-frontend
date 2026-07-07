@@ -798,6 +798,7 @@ export const translations = {
   signingIn: { en: "Signing in...", ar: "جاري تسجيل الدخول..." },
   noAccount: { en: "Don't have an account?", ar: "ليس لديك حساب؟" },
   createOne: { en: "Create one", ar: "أنشئ حساباً" },
+  invalidCredentials: { en: "Invalid email or password", ar: "البريد الإلكتروني أو كلمة المرور غير صحيحة" },
   loginFailed: { en: "Login failed", ar: "فشل تسجيل الدخول" },
   joinTawreed: {
     en: "Join Tawreed as a buyer or supplier or driver",

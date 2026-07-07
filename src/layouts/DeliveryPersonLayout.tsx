@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LayoutDashboard, Truck, User, LogOut, Globe, ClipboardList, Search } from 'lucide-react';
 import { useLanguage } from '../i18n';
@@ -65,9 +65,9 @@ export function DeliveryPersonLayout() {
       {/* Main Content Area */}
       <main className="flex-1 pb-16 md:pb-0 overflow-y-auto h-screen relative">
         <header className="h-20 bg-white/85 backdrop-blur-xl border-b border-white/70 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 shrink-0 md:hidden shadow-xl shadow-slate-200/60">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <img src="/tawreed-logo.png" alt="Tawreed" className="h-12 w-auto shrink-0" />
-          </div>
+          </Link>
           <div className="flex items-center gap-2">
             <NavLink
               to="/delivery/profile"
@@ -134,10 +134,7 @@ export function DeliveryPersonLayout() {
                   end={item.path === '/delivery/dashboard'}
                   className="group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5"
                 >
-                  {isActive && (
-                    <span className="absolute -top-1.5 mx-auto h-1 w-7 rounded-full bg-[#1e3a8a]" />
-                  )}
-                  <Icon className={`${isActive ? "text-[#1e3a8a]" : "text-slate-400 group-active:text-[#1e3a8a] transition-colors"} ${!isActive && "scale-110 opacity-60"}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? "text-[#1e3a8a]" : "text-slate-400 group-active:text-[#1e3a8a] transition-colors"}`} />
                   <span className={`text-[11px] font-extrabold tracking-tight ${
                     isActive ? "text-[#1e3a8a]" : "font-semibold text-slate-400 group-active:text-[#1e3a8a]"
                   }`}>

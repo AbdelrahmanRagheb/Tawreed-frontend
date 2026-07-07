@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Search, Users, Eye, Ban, CheckCircle, X, TrendingUp, Clock, Activity,
   MapPin, Calendar, AlertTriangle, Phone, Mail, Briefcase, Star, Shield,
@@ -11,6 +12,7 @@ type StatusFilter = 'all' | 'Active' | 'Suspended';
 
 export function AdminUsers() {
   const { language, t } = useLanguage();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -29,6 +31,11 @@ export function AdminUsers() {
       .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load users'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const detailId = searchParams.get('detail');
+    if (detailId) openDetail(detailId);
+  }, [searchParams]);
 
   const filtered = users.filter((u) => {
     const term = search.toLowerCase();

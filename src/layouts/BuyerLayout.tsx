@@ -239,10 +239,7 @@ export function BuyerLayout() {
                   end={item.path === '/buyer'}
                   className="group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5"
                 >
-                  {isActive && (
-                    <span className="absolute -top-1.5 mx-auto h-1 w-7 rounded-full bg-[#1e3a8a]" />
-                  )}
-                  <Icon className={`${isActive ? "text-[#1e3a8a]" : "text-slate-400 group-active:text-[#1e3a8a] transition-colors"} ${!isActive && "scale-110 opacity-60"}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? "text-[#1e3a8a]" : "text-slate-400 group-active:text-[#1e3a8a] transition-colors"}`} />
                   <span className={`text-[11px] font-extrabold tracking-tight ${
                     isActive ? "text-[#1e3a8a]" : "font-semibold text-slate-400 group-active:text-[#1e3a8a]"
                   }`}>

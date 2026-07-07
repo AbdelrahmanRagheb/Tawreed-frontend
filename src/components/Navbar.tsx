@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Menu, Search, ShoppingCart, User, Globe } from 'lucide-react';
 import { useLanguage, toArabicNumeral } from '../i18n';
 
@@ -9,9 +10,9 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo & Brand */}
-          <div className="flex items-center gap-2 cursor-pointer">
+          <Link to="/" className="flex items-center gap-2 cursor-pointer">
             <img src="/tawreed-logo.png" alt="Tawreed" className="h-20 w-auto shrink-0" />
-          </div>
+          </Link>
 
           {/* Search Bar */}
           <div className="flex-1 max-w-2xl px-4 sm:px-8 hidden sm:flex">

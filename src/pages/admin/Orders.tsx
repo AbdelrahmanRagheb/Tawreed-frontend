@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ShoppingCart, Clock, CheckCircle, XCircle, Package, AlertTriangle, Eye, X, MapPin, Users, Store, DollarSign, Activity, Calendar, FileText } from 'lucide-react';
 import { useLanguage, toArabicNumeral } from '../../i18n';
 import { adminService, type AdminOrderListItem, type AdminOrderDetailResponse } from '../../services/admin.service';
@@ -12,6 +13,7 @@ const statusConfig: Record<string, { icon: typeof Clock; labelKey: string; color
 
 export function AdminOrders() {
   const { language, t } = useLanguage();
+  const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<AdminOrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,6 +34,14 @@ export function AdminOrders() {
       .catch((err) => setError(err?.response?.data?.message || err?.message || 'Failed to load orders'))
       .finally(() => setLoading(false));
   }, [statusFilter]);
+
+  useEffect(() => {
+    const detailId = searchParams.get('detail');
+    if (detailId && orders.length > 0) {
+      const order = orders.find(o => o.id === detailId);
+      if (order) handleViewOrder(order);
+    }
+  }, [searchParams, orders]);
 
   const handleViewOrder = async (order: AdminOrderListItem) => {
     setSelectedOrder(order);

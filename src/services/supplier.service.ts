@@ -180,6 +180,21 @@ export interface UpdateSupplierProductRequest {
   isActive?: boolean;
 }
 
+export interface SupplierReportsResponse {
+  revenueTrend: { month: string; total: number }[];
+  ordersTrend: { month: string; total: number; open: number; closed: number; completed: number; cancelled: number }[];
+  topProducts: { productName: string; quantitySold: number; revenue: number }[];
+  deliveryOverview: DeliveryOverview;
+  monthlyComparison: {
+    currentMonthRevenue: number;
+    previousMonthRevenue: number;
+    revenueChangePercent: number;
+    currentMonthOrders: number;
+    previousMonthOrders: number;
+    ordersChangePercent: number;
+  };
+}
+
 export interface UpdateDeliveryStatusRequest {
   status: string;
   trackingNotes?: string;
@@ -187,6 +202,8 @@ export interface UpdateDeliveryStatusRequest {
 }
 
 export const supplierService = {
+  getReports: () =>
+    http.get<SupplierReportsResponse>('/supplier/reports'),
   getDashboard: () =>
     http.get<SupplierDashboardResponse>('/supplier/dashboard'),
 
