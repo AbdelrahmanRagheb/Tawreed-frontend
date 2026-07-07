@@ -66,7 +66,6 @@ export default function App() {
       </div>
 
       <div className="relative mx-auto flex min-h-screen max-w-[1500px] gap-5 p-3 lg:p-6">
-
         {/* ===== SIDEBAR – DESKTOP ONLY ===== */}
         <aside className="hidden w-72 shrink-0 lg:block">
           <div className="sticky top-4 flex h-[calc(100vh-32px)] flex-col rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-xl shadow-slate-200/70 backdrop-blur-xl">
@@ -75,7 +74,9 @@ export default function App() {
               <Logo className="h-13 w-15 shrink-0" showWordmark={false} />
               <div>
                 <p className="text-xl font-extrabold text-[#1e3a8a]">توريد</p>
-                <p className="text-xs font-semibold text-slate-400">{lang === "ar" ? "لوحة المشتري" : "Buyer Dashboard"}</p>
+                <p className="text-xs font-semibold text-slate-400">
+                  {lang === "ar" ? "لوحة المشتري" : "Buyer Dashboard"}
+                </p>
               </div>
             </div>
 
@@ -93,7 +94,9 @@ export default function App() {
                         : "text-slate-500 hover:bg-slate-100 hover:text-[#1e3a8a]"
                     }`}
                   >
-                    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${active ? "bg-white/15" : "bg-white text-slate-400 group-hover:text-[#1e3a8a]"}`}>
+                    <span
+                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${active ? "bg-white/15" : "bg-white text-slate-400 group-hover:text-[#1e3a8a]"}`}
+                    >
                       <SidebarIcon path={tab.icon} />
                     </span>
                     {tab.name}
@@ -104,11 +107,18 @@ export default function App() {
 
             {/* Bottom CTA card */}
             <div className="mt-auto rounded-[1.75rem] bg-gradient-to-br from-slate-950 to-[#1e3a8a] p-5 text-white">
-              <p className="text-sm font-bold">{lang === "ar" ? "هل تحتاج مورد جديد؟" : "Need a new supplier?"}</p>
-              <p className="mt-1 text-xs leading-6 text-blue-100">
-                {lang === "ar" ? "أنشئ طلب توريد جديد وسيتم ترشيح أفضل الموردين لك خلال دقائق." : "Create a new sourcing request and we'll match you with the best suppliers in minutes."}
+              <p className="text-sm font-bold">
+                {lang === "ar" ? "هل تحتاج مورد جديد؟" : "Need a new supplier?"}
               </p>
-              <button onClick={() => setActiveTab("إنشاء")} className="mt-4 rounded-2xl bg-white px-5 py-2.5 text-xs font-extrabold text-[#1e3a8a] transition hover:bg-blue-50">
+              <p className="mt-1 text-xs leading-6 text-blue-100">
+                {lang === "ar"
+                  ? "أنشئ طلب توريد جديد وسيتم ترشيح أفضل الموردين لك خلال دقائق."
+                  : "Create a new sourcing request and we'll match you with the best suppliers in minutes."}
+              </p>
+              <button
+                onClick={() => setActiveTab("إنشاء")}
+                className="mt-4 rounded-2xl bg-white px-5 py-2.5 text-xs font-extrabold text-[#1e3a8a] transition hover:bg-blue-50"
+              >
                 {lang === "ar" ? "إنشاء طلب" : "Create Request"}
               </button>
             </div>
@@ -117,23 +127,29 @@ export default function App() {
 
         {/* ===== MAIN CONTENT ===== */}
         <main className="flex min-w-0 flex-1 flex-col gap-4 pb-20 lg:pb-4">
-
           {/* HEADER – contains language + profile buttons on BOTH mobile & desktop */}
           <header className="rounded-[1.75rem] sm:rounded-[2rem] border border-white/70 bg-white/85 p-4 sm:p-5 shadow-xl shadow-slate-200/60 backdrop-blur-xl">
             {/* Row 1: Title / Search / Actions */}
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 {/* Logo visible only on mobile */}
-                <Logo className="h-9 w-auto shrink-0 lg:hidden" showWordmark={false} />
+                <Logo
+                  className="h-9 w-auto shrink-0 lg:hidden"
+                  showWordmark={false}
+                />
                 <div>
                   <p className="text-xs font-bold tracking-wide text-[#1e3a8a] uppercase">
-                    {lang === "ar" ? "لوحة التحكم" : "Dashboard"} · {activeTab}
+                    {lang === "ar" ? "الرئيسية" : "Dashboard"} · {activeTab}
                   </p>
                   <h1 className="mt-0.5 text-2xl font-extrabold leading-tight sm:text-3xl lg:text-4xl">
-                    {lang === "ar" ? "مرحباً، شركة النور للتجارة" : "Welcome, Al-Noor Trading Co."}
+                    {lang === "ar"
+                      ? "مرحباً، شركة النور للتجارة"
+                      : "Welcome, Al-Noor Trading Co."}
                   </h1>
                   <p className="mt-1 hidden text-sm text-slate-500 sm:block">
-                    {lang === "ar" ? "تابع طلباتك، الموردين المحفوظين، والتنبيهات من مكان واحد." : "Track orders, saved suppliers, and alerts—all in one place."}
+                    {lang === "ar"
+                      ? "تابع طلباتك، الموردين المحفوظين، والتنبيهات من مكان واحد."
+                      : "Track orders, saved suppliers, and alerts—all in one place."}
                   </p>
                 </div>
               </div>
@@ -144,9 +160,19 @@ export default function App() {
                 <div className="relative w-full md:w-64 lg:w-80">
                   <input
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pr-10 pl-4 text-sm outline-none transition focus:border-[#1e3a8a] focus:bg-white placeholder:text-slate-400"
-                    placeholder={lang === "ar" ? "ابحث عن طلب أو مورد..." : "Search orders or suppliers..."}
+                    placeholder={
+                      lang === "ar"
+                        ? "ابحث عن طلب أو مورد..."
+                        : "Search orders or suppliers..."
+                    }
                   />
-                  <svg className="absolute right-3.5 top-2.5 h-4.5 w-4.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="absolute right-3.5 top-2.5 h-4.5 w-4.5 text-slate-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M21 21l-5.2-5.2m2.2-5.3a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0z" />
                   </svg>
                 </div>
@@ -166,7 +192,9 @@ export default function App() {
                   onClick={toggleLang}
                   className="shrink-0 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:border-[#1e3a8a] hover:text-[#1e3a8a]"
                 >
-                  <span className="font-sans">{lang === "ar" ? "EN" : "عربي"}</span>
+                  <span className="font-sans">
+                    {lang === "ar" ? "EN" : "عربي"}
+                  </span>
                 </button>
 
                 {/* PROFILE AVATAR BUTTON – mobile only */}
@@ -193,27 +221,50 @@ export default function App() {
                   {/* Decorative glow */}
                   <div className="pointer-events-none absolute -left-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
                   <div className="relative flex items-center justify-between">
-                    <p className="text-xs font-semibold text-emerald-50 lg:text-sm">{stat.label}</p>
+                    <p className="text-xs font-semibold text-emerald-50 lg:text-sm">
+                      {stat.label}
+                    </p>
                     <span className="grid h-7 w-7 place-items-center rounded-full bg-white/15 text-emerald-50 lg:h-8 lg:w-8">
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                       </svg>
                     </span>
                   </div>
                   <div className="relative mt-3 flex items-end justify-between">
-                    <span className="text-2xl font-extrabold tracking-tight text-white lg:text-4xl">{stat.value}</span>
-                    <span className="rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-extrabold text-white lg:px-3 lg:py-1 lg:text-xs">{stat.change}</span>
+                    <span className="text-2xl font-extrabold tracking-tight text-white lg:text-4xl">
+                      {stat.value}
+                    </span>
+                    <span className="rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-extrabold text-white lg:px-3 lg:py-1 lg:text-xs">
+                      {stat.change}
+                    </span>
                   </div>
                 </div>
               ) : (
-                <div key={stat.label} className="rounded-2xl lg:rounded-[1.75rem] border border-white/70 bg-white/90 p-4 lg:p-5 shadow-lg shadow-slate-200/50 transition hover:-translate-y-0.5">
-                  <p className="text-xs font-semibold text-slate-500 lg:text-sm">{stat.label}</p>
+                <div
+                  key={stat.label}
+                  className="rounded-2xl lg:rounded-[1.75rem] border border-white/70 bg-white/90 p-4 lg:p-5 shadow-lg shadow-slate-200/50 transition hover:-translate-y-0.5"
+                >
+                  <p className="text-xs font-semibold text-slate-500 lg:text-sm">
+                    {stat.label}
+                  </p>
                   <div className="mt-3 flex items-end justify-between">
-                    <span className="text-2xl font-extrabold tracking-tight text-slate-950 lg:text-4xl">{stat.value}</span>
-                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-[#1e3a8a] lg:px-3 lg:py-1 lg:text-xs">{stat.change}</span>
+                    <span className="text-2xl font-extrabold tracking-tight text-slate-950 lg:text-4xl">
+                      {stat.value}
+                    </span>
+                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-[#1e3a8a] lg:px-3 lg:py-1 lg:text-xs">
+                      {stat.change}
+                    </span>
                   </div>
                 </div>
-              )
+              ),
             )}
           </section>
 
@@ -223,10 +274,19 @@ export default function App() {
             <div className="rounded-2xl lg:rounded-[2rem] border border-white/70 bg-white/90 p-4 lg:p-5 shadow-xl shadow-slate-200/60">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-extrabold lg:text-xl">{lang === "ar" ? "آخر الطلبات" : "Recent Orders"}</h2>
-                  <p className="mt-0.5 text-xs text-slate-500 lg:text-sm">{lang === "ar" ? "نظرة سريعة على أحدث عمليات الشراء" : "Quick look at your latest purchases"}</p>
+                  <h2 className="text-lg font-extrabold lg:text-xl">
+                    {lang === "ar" ? "آخر الطلبات" : "Recent Orders"}
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-500 lg:text-sm">
+                    {lang === "ar"
+                      ? "نظرة سريعة على أحدث عمليات الشراء"
+                      : "Quick look at your latest purchases"}
+                  </p>
                 </div>
-                <button onClick={() => setActiveTab("الطلبات")} className="rounded-2xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-[#1e3a8a] hover:text-white lg:px-4 lg:py-2 lg:text-sm">
+                <button
+                  onClick={() => setActiveTab("الطلبات")}
+                  className="rounded-2xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-[#1e3a8a] hover:text-white lg:px-4 lg:py-2 lg:text-sm"
+                >
                   {lang === "ar" ? "عرض الكل" : "View All"}
                 </button>
               </div>
@@ -242,17 +302,32 @@ export default function App() {
                     <span>{lang === "ar" ? "الحالة" : "Status"}</span>
                   </div>
                   {orders.map((order) => (
-                    <div key={order.id} className="group grid gap-3 border-t border-slate-100 px-4 py-3.5 text-sm md:grid-cols-5 md:items-center">
-                      <div className="font-extrabold text-[#1e3a8a]">{order.id}</div>
-                      <div>
-                        <div className="font-bold text-slate-800">{order.supplier}</div>
-                        {/* Show category below on mobile like a sub-line */}
-                        <div className="md:hidden mt-1 text-xs text-slate-400">{order.category}</div>
+                    <div
+                      key={order.id}
+                      className="group grid gap-3 border-t border-slate-100 px-4 py-3.5 text-sm md:grid-cols-5 md:items-center"
+                    >
+                      <div className="font-extrabold text-[#1e3a8a]">
+                        {order.id}
                       </div>
-                      <div className="hidden text-slate-500 md:block">{order.category}</div>
+                      <div>
+                        <div className="font-bold text-slate-800">
+                          {order.supplier}
+                        </div>
+                        {/* Show category below on mobile like a sub-line */}
+                        <div className="md:hidden mt-1 text-xs text-slate-400">
+                          {order.category}
+                        </div>
+                      </div>
+                      <div className="hidden text-slate-500 md:block">
+                        {order.category}
+                      </div>
                       <div className="font-bold">{order.amount}</div>
                       <div>
-                        <span className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-extrabold ${order.tone}`}>{order.status}</span>
+                        <span
+                          className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-extrabold ${order.tone}`}
+                        >
+                          {order.status}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -264,21 +339,36 @@ export default function App() {
             <div className="rounded-2xl lg:rounded-[2rem] border border-white/70 bg-slate-950 p-4 lg:p-5 text-white shadow-xl shadow-slate-200/60">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-extrabold lg:text-xl">{lang === "ar" ? "التوصيلات النشطة" : "Active Deliveries"}</h2>
-                  <p className="mt-0.5 text-xs text-white/50 lg:text-sm">{lang === "ar" ? "تحديث مباشر لحالة الشحنات" : "Real-time shipment updates"}</p>
+                  <h2 className="text-lg font-extrabold lg:text-xl">
+                    {lang === "ar" ? "التوصيلات النشطة" : "Active Deliveries"}
+                  </h2>
+                  <p className="mt-0.5 text-xs text-white/50 lg:text-sm">
+                    {lang === "ar"
+                      ? "تحديث مباشر لحالة الشحنات"
+                      : "Real-time shipment updates"}
+                  </p>
                 </div>
-                <span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[11px] font-bold text-emerald-300 lg:px-3 lg:text-xs">LIVE</span>
+                <span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[11px] font-bold text-emerald-300 lg:px-3 lg:text-xs">
+                  LIVE
+                </span>
               </div>
 
               <div className="space-y-3.5">
                 {deliveries.map((delivery) => (
-                  <div key={delivery.title} className="rounded-xl lg:rounded-[1.4rem] bg-white/[0.06] p-4 ring-1 ring-white/10">
+                  <div
+                    key={delivery.title}
+                    className="rounded-xl lg:rounded-[1.4rem] bg-white/[0.06] p-4 ring-1 ring-white/10"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="text-sm font-bold">{delivery.title}</p>
-                        <p className="mt-0.5 text-[11px] text-white/45 lg:text-xs">{delivery.place}</p>
+                        <p className="mt-0.5 text-[11px] text-white/45 lg:text-xs">
+                          {delivery.place}
+                        </p>
                       </div>
-                      <span className="text-xs font-extrabold text-blue-200 lg:text-sm">{delivery.progress}%</span>
+                      <span className="text-xs font-extrabold text-blue-200 lg:text-sm">
+                        {delivery.progress}%
+                      </span>
                     </div>
                     <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
                       <div
@@ -298,50 +388,75 @@ export default function App() {
             <div className="rounded-2xl lg:rounded-[2rem] border border-white/70 bg-white/90 p-4 lg:p-5 shadow-xl shadow-slate-200/60 xl:col-span-2">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-extrabold lg:text-xl">{lang === "ar" ? "موردون محفوظون" : "Saved Suppliers"}</h2>
-                  <p className="mt-0.5 text-xs text-slate-500 lg:text-sm">{lang === "ar" ? "أفضل الموردين حسب مشترياتك الأخيرة" : "Top suppliers based on recent purchases"}</p>
+                  <h2 className="text-lg font-extrabold lg:text-xl">
+                    {lang === "ar" ? "موردون محفوظون" : "Saved Suppliers"}
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-500 lg:text-sm">
+                    {lang === "ar"
+                      ? "أفضل الموردين حسب مشترياتك الأخيرة"
+                      : "Top suppliers based on recent purchases"}
+                  </p>
                 </div>
-                <button onClick={() => setActiveTab("المحفوظة")} className="text-xs font-extrabold text-[#1e3a8a] hover:underline lg:text-sm">
+                <button
+                  onClick={() => setActiveTab("المحفوظة")}
+                  className="text-xs font-extrabold text-[#1e3a8a] hover:underline lg:text-sm"
+                >
                   {lang === "ar" ? "إدارة" : "Manage"}
                 </button>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {["Al-Salam Foods", "TechHub Electronics", "Nour Fashion"].map((supplier, index) => (
-                  <div key={supplier} className="rounded-2xl lg:rounded-[1.5rem] border border-slate-100 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-[#1e3a8a] hover:bg-white cursor-pointer group">
-                    <div className="mb-3 grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white text-base font-extrabold text-[#1e3a8a] shadow-sm lg:h-12 lg:w-12 lg:text-lg">
-                      {index + 1}
+                {["Al-Salam Foods", "TechHub Electronics", "Nour Fashion"].map(
+                  (supplier, index) => (
+                    <div
+                      key={supplier}
+                      className="rounded-2xl lg:rounded-[1.5rem] border border-slate-100 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-[#1e3a8a] hover:bg-white cursor-pointer group"
+                    >
+                      <div className="mb-3 grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white text-base font-extrabold text-[#1e3a8a] shadow-sm lg:h-12 lg:w-12 lg:text-lg">
+                        {index + 1}
+                      </div>
+                      <p className="font-extrabold text-sm lg:text-base truncate">
+                        {supplier}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-slate-500 lg:text-xs">
+                        ⭐ 4.{9 - index}/5
+                      </p>
+                      <button className="mt-3.5 w-full rounded-2xl bg-white py-2 text-[11px] font-extrabold text-slate-600 shadow-sm transition group-hover:bg-[#1e3a8a] group-hover:text-white lg:py-2.5 lg:text-xs">
+                        {lang === "ar" ? "طلب سريع" : "Quick Order"}
+                      </button>
                     </div>
-                    <p className="font-extrabold text-sm lg:text-base truncate">{supplier}</p>
-                    <p className="mt-0.5 text-[11px] text-slate-500 lg:text-xs">⭐ 4.{9 - index}/5</p>
-                    <button className="mt-3.5 w-full rounded-2xl bg-white py-2 text-[11px] font-extrabold text-slate-600 shadow-sm transition group-hover:bg-[#1e3a8a] group-hover:text-white lg:py-2.5 lg:text-xs">
-                      {lang === "ar" ? "طلب سريع" : "Quick Order"}
-                    </button>
-                  </div>
-                ))}
+                  ),
+                )}
               </div>
             </div>
 
             {/* Important Alerts */}
             <div className="rounded-2xl lg:rounded-[2rem] border border-white/70 bg-white/90 p-4 lg:p-5 shadow-xl shadow-slate-200/60">
-              <h2 className="text-lg font-extrabold lg:text-xl">{lang === "ar" ? "تنبيهات مهمة" : "Important Alerts"}</h2>
+              <h2 className="text-lg font-extrabold lg:text-xl">
+                {lang === "ar" ? "تنبيهات مهمة" : "Important Alerts"}
+              </h2>
               <div className="mt-4 space-y-2.5">
-                {(lang === "ar" ? [
-                  "فاتورة TR-2481 جاهزة للدفع",
-                  "مورد جديد متاح في فئة المشروبات",
-                  "تم تحديث موعد توصيل شحنة جدة",
-                ] : [
-                  "Invoice TR-2481 ready for payment",
-                  "New supplier available in Beverages",
-                  "Jeddah shipment delivery time updated",
-                ]).map((alert) => (
-                  <div key={alert} className="rounded-xl lg:rounded-[1.25rem] bg-blue-50 p-3.5 text-xs font-semibold text-slate-700 leading-relaxed lg:p-4 lg:text-sm">
+                {(lang === "ar"
+                  ? [
+                      "فاتورة TR-2481 جاهزة للدفع",
+                      "مورد جديد متاح في فئة المشروبات",
+                      "تم تحديث موعد توصيل شحنة جدة",
+                    ]
+                  : [
+                      "Invoice TR-2481 ready for payment",
+                      "New supplier available in Beverages",
+                      "Jeddah shipment delivery time updated",
+                    ]
+                ).map((alert) => (
+                  <div
+                    key={alert}
+                    className="rounded-xl lg:rounded-[1.25rem] bg-blue-50 p-3.5 text-xs font-semibold text-slate-700 leading-relaxed lg:p-4 lg:text-sm"
+                  >
                     🔔 {alert}
                   </div>
                 ))}
               </div>
             </div>
           </section>
-
         </main>
       </div>
 
@@ -367,29 +482,49 @@ export default function App() {
                     path={tab.icon}
                     className={`${active ? "text-[#1e3a8a]" : "text-slate-400 group-active:text-[#1e3a8a] transition-colors"} ${!active && "scale-110 opacity-60"}`}
                   />
-                  <span className={`[11px] font-extrabold tracking-tight ${
-                    active
-                      ? "text-[#1e3a8a]"
-                      : "text-[11px] font-semibold text-slate-400 group-active:text-[#1e3a8a]"
-                  }`}>
+                  <span
+                    className={`[11px] font-extrabold tracking-tight ${
+                      active
+                        ? "text-[#1e3a8a]"
+                        : "text-[11px] font-semibold text-slate-400 group-active:text-[#1e3a8a]"
+                    }`}
+                  >
                     {/* Shortened names for mobile bottom bar */}
-                    {tab.name === "الرئيسية" ? (lang === "ar" ? "الرئيسية" : "Home") :
-                     tab.name === "الطلبات" ? (lang === "ar" ? "طلبات" : "Orders") :
-                     tab.name === "المحفوظة" ? (lang === "ar" ? "محفوظة" : "Saved") :
-                     tab.name === "إنشاء" ? (lang === "ar" ? "طلب جديد" : "New Order") :
-                     tab.name === "التنبيهات" ? (lang === "ar" ? "تنبيهات" : "Alerts")
-                     : tab.name}
+                    {tab.name === "الرئيسية"
+                      ? lang === "ar"
+                        ? "الرئيسية"
+                        : "Home"
+                      : tab.name === "الطلبات"
+                        ? lang === "ar"
+                          ? "طلبات"
+                          : "Orders"
+                        : tab.name === "المحفوظة"
+                          ? lang === "ar"
+                            ? "محفوظة"
+                            : "Saved"
+                          : tab.name === "إنشاء"
+                            ? lang === "ar"
+                              ? "طلب جديد"
+                              : "New Order"
+                            : tab.name === "التنبيهات"
+                              ? lang === "ar"
+                                ? "تنبيهات"
+                                : "Alerts"
+                              : tab.name}
                   </span>
                 </button>
               );
             })}
 
             {/* More menu item for tabs not shown in bottom nav */}
-            <button
-              className="group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5"
-            >
-              <SidebarIcon path="M19 8H5m14 0V6a2 2 0 00-2-2H7a2 2 0 00-2 2v2m14 0v12a2 2 0 01-2 2H7a2 2 0 01-2-2V8m14 0H5m14 0v12a2 2 0 01-2 2H7a2 2 0 01-2-2V8" className="text-slate-400 scale-110 opacity-60" />
-              <span className="[11px] font-semibold text-slate-400">{lang === "ar" ? "المزيد" : "More"}</span>
+            <button className="group relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5">
+              <SidebarIcon
+                path="M19 8H5m14 0V6a2 2 0 00-2-2H7a2 2 0 00-2 2v2m14 0v12a2 2 0 01-2 2H7a2 2 0 01-2-2V8m14 0H5m14 0v12a2 2 0 01-2 2H7a2 2 0 01-2-2V8"
+                className="text-slate-400 scale-110 opacity-60"
+              />
+              <span className="[11px] font-semibold text-slate-400">
+                {lang === "ar" ? "المزيد" : "More"}
+              </span>
             </button>
           </div>
         </div>
